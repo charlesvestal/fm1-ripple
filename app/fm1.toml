@@ -10,14 +10,17 @@ msc = true                     # disk mode: the FM-1 as a USB drive of its disk 
 mirror = true                  # the screen and panel over USB (fm1-base web/mirror, tools/fm1_remote.py)
 words = "words.tsv"
 font_full = ["M"]              # droplets write lower case in every size
-include = ["lua", "../sdk/include"]
+include = ["lua", "../sdk/include", "../sdk/faust"]
+web = ["build/currents-web/*.c"] # the emulator: the currents linked in (sdk/tools/currents.py --web, gen)
+web_cflags = ["-sSUPPORT_LONGJMP=wasm"]   # Lua's errors in the emulator: WebAssembly's own setjmp (no JavaScript)
 device_include = ["lua/libc"]          # declarations of the few C library calls Lua makes (luaport.c has them)
 o2 = ["lua/lua_one.c"]         # Lua and the droplet API, its own unit (o2_cflags: at -Os, it is not the render)
 o2_cflags = ["-Os"]
 asm = ["lua/lj.S"]             # Lua's errors: setjmp / longjmp
 vendored = ["third_party/"]
 gen = ["../tools/mkdisk.py ../disk --header {gen}/disk_image.h",        # the empty disk: disk/ (its folders)
-       "../tools/mkdisk.py build/builtin --builtin {gen}/builtin_image.h"] # built in: builtin/ and the currents (build.sh)
+       "../tools/mkdisk.py build/builtin --builtin {gen}/builtin_image.h", # built in: builtin/ and the currents (build.sh)
+       "../sdk/tools/currents.py ../currents --web build/currents-web"]    # the emulator's currents, as C
 # the site
 tagline = "Droplets and currents for the FM-1"
 repo = "https://github.com/charlesvestal/fm1-ripple"

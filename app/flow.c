@@ -10,7 +10,7 @@
  * (app/build/currents-host/NAME.so, sdk/tools/currents.py --host), opened by name; the .cur must still be on the
  * disk. */
 #include "ripple_current.h"
-#ifdef PLAT_HOST
+#if defined(PLAT_HOST) && !defined(PLAT_WEB)
 #include <dlfcn.h>
 #endif
 
@@ -181,6 +181,25 @@ static const rc_desc_t *cur_link(const char *path)
     entry = (const rc_desc_t *(*)(void))(uintptr_t)(img + h.entry);
     crumb_set(23, path);
     return entry();
+}
+#elif defined(PLAT_WEB)
+/* the browser's emulator: every current linked in (sdk/tools/currents.py --web), found by name */
+struct rc_web { const char *name; const rc_desc_t *(*entry)(void); };
+extern const struct rc_web rc_web_list[];
+static const rc_desc_t *cur_link(const char *path)
+{
+    const char *base = strrchr(path, '/') + 1;
+    disk_file_t f;
+    uint32_t i, n = (uint32_t)strlen(base) - 4u;
+    if (disk_open(path, &f) != 0) {
+        flow_err = "not on the disk";
+        return 0;
+    }
+    for (i = 0; rc_web_list[i].name; i++)
+        if (strlen(rc_web_list[i].name) == n && !strncmp(rc_web_list[i].name, base, n))
+            return rc_web_list[i].entry();
+    flow_err = "not in the emulator";
+    return 0;
 }
 #else
 static const rc_desc_t *cur_link(const char *path)

@@ -27,5 +27,10 @@ mkdir -p app/build/scenarios/examples
 run examples env RIPPLE_CURRENTS=app/build/currents-host app/build/host/ripple_host tests/scenarios/examples.txt \
     app/build/scenarios/examples
 run selftest sh tests/selftest.sh
+if command -v emcc >/dev/null 2>&1 && command -v node >/dev/null 2>&1; then
+    run emu sh -c "sh build.sh --web && node tests/host/emu_test.mjs app/build/emu/app.wasm"
+else
+    echo "  skip emu (no emcc or node)"
+fi
 [ $FAIL -eq 0 ] && echo "all tests passed" || echo "TESTS FAILED"
 exit $FAIL

@@ -19,6 +19,6 @@ mkdir -p app/build/builtin
 cp -R builtin/. app/build/builtin/
 "$PY" sdk/tools/currents.py currents/*.dsp currents/*.c --out app/build/builtin/currents
 case " $* " in
-    *" --host "*|*" --web "*) "$PY" sdk/tools/currents.py currents/*.dsp currents/*.c --host app/build/currents-host ;;
+    *" --host "*) "$PY" sdk/tools/currents.py currents/*.dsp currents/*.c --host app/build/currents-host ;;
 esac
 exec "$PY" base/tools/build.py app "$@"
