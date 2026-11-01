@@ -299,21 +299,6 @@ int lr_start(const char *path)
     lua_pushcfunction(LS, u_note);
     lua_setfield(LS, -2, "note");
     lua_setglobal(LS, "util");
-    {   /* the port, step by step (a hang names its step: rp_crumb) */
-        static const char *const PROBE[] = {
-            "return 1", "return 0.5", "local t = {} t.x = 1 return t", "return 1 + 2.5", "error('x')",
-            "return math.floor(2.5)", "return tostring(2.5)", "return string.format('%d', 3)",
-            "return coroutine.wrap(function() coroutine.yield(1) end)()", "return pcall(error, 'y')"};
-        uint32_t k;
-        for (k = 0; k < sizeof PROBE / sizeof PROBE[0]; k++) {
-            rp_crumb(40 + 2u * k, PROBE[k]);
-            if (luaL_loadstring(LS, PROBE[k]) == LUA_OK) {
-                rp_crumb(41 + 2u * k, PROBE[k]);
-                lua_pcall(LS, 0, 0, 0);
-            }
-            lua_settop(LS, 0);
-        }
-    }
     rp_crumb(6, "prelude");
     if (luaL_loadbuffer(LS, PRELUDE, sizeof PRELUDE - 1u, "=prelude") != LUA_OK || lr_pcall(0) != 0) {
         if (!lr_err[0])
