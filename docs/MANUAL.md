@@ -2,8 +2,10 @@
 
 Ripple turns the M-VAVE FM-1 into an instrument you can reprogram without reflashing. It runs droplets: small
 programs in Lua, each one a different instrument, from a drum machine to a generative ambient piece. The sounds
-come from currents, written in Faust or C. Twelve droplets and six currents are built in, and you can add your own:
-in disk mode the FM-1 shows up on your computer as a USB drive, and you copy files onto it.
+come from currents, written in Faust or C. Any droplet can load any currents and chain them as it likes, so the
+same voices, drums and effects turn up in many instruments, and a new one can be a few lines of Lua. Twelve
+droplets and six currents are built in, and you can add your own: in disk mode the FM-1 shows up on your computer
+as a USB drive, and you copy files onto it.
 
 The idea comes from monome's norns: small scripts over compiled sound engines.
 

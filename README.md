@@ -4,6 +4,10 @@ A firmware for the M-VAVE FM-1 that runs **droplets** (instruments written in Lu
 written in Faust or C), both loaded from a disk in the FM-1's own flash. In disk mode, the FM-1 shows up on a
 computer as a USB drive: copy a droplet or a current onto it, eject it, and it's there. Nothing needs reflashing.
 
+Droplets and currents are separate on purpose: any droplet can load any currents and chain them as it likes, so a
+new instrument is often just a few lines of Lua over sounds that already exist. The FM bells from one droplet can
+play a drum machine's pattern in another, through the same delay.
+
 Inspired by monome's norns: Lua scripts over compiled sound engines.
 
 ## On the FM-1
