@@ -37,8 +37,8 @@ namespace stmlib {
 // swaps each voice's own state in around its render, so a voice draws the same numbers whichever core
 // renders it (LOOM's one-core and two-core renders stay bit-identical). The core is told by the stack
 // the render runs on: core 1's is _c1_ustack.._c1_sstack_top (hal/fm1_cpu1.S); the host has one.
-#if defined(XY_HOST) || defined(TEST_HOST)
-inline int RandomCore() { return 0; }
+#if defined(XY_HOST) || defined(TEST_HOST) || defined(PLAT_WEB)
+inline int RandomCore() { return 0; }       // (Ripple's emulator: one core)
 #elif defined(RIPPLE_CURRENT)
 // Ripple: a current sees none of the firmware's symbols. Each part of the current notes where its core's stack is
 // as it starts (plaits_core_sp, plaits_current.h), and the core is the one whose note is nearer: the two stacks are

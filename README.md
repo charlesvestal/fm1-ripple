@@ -61,6 +61,9 @@ Each keeps its settings when you press SAVE (beat, euclid and loop their pattern
 
 For droplets, see [docs/DROPLETS.md](docs/DROPLETS.md). For currents, see [sdk/README.md](sdk/README.md).
 
+The emulator on the site has a panel for writing your own: a droplet in Lua or a current in Faust, run there at once,
+or a C or C++ current built for it (`currents.py --web-module`) and dropped on it.
+
 ## Build and test
 
 ```sh

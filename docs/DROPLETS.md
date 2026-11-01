@@ -14,6 +14,12 @@ droplets are in `builtin/droplets` in Ripple's repository: copy one onto the dis
 Ripple runs Lua 5.4 with 32-bit integers and 32-bit floats. There is no `io`, `os` or `debug` library. `require`
 finds modules in `lib` and `droplets`, on the disk or built in.
 
+## Trying one in the emulator
+
+The emulator on Ripple's site has a panel under the FM-1, **Write your own**: write a droplet there (or drop a `.lua`
+file on it) and Run puts it on the emulator's disk and starts it. What it prints and the error it stops on show
+under it, and what you write is kept in your browser. When it works, copy it to the FM-1 in disk mode.
+
 ## A small droplet
 
 ```lua

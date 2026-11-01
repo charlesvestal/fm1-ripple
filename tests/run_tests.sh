@@ -29,6 +29,8 @@ run examples env RIPPLE_CURRENTS=app/build/currents-host app/build/host/ripple_h
 run selftest sh tests/selftest.sh
 if command -v emcc >/dev/null 2>&1 && command -v node >/dev/null 2>&1; then
     run emu sh -c "sh build.sh --web && node tests/host/emu_test.mjs app/build/emu/app.wasm"
+    run emu-upload sh -c "python3 sdk/tools/currents.py tests/host/webbeep.c --web-module app/build/tests >/dev/null &&
+        node tests/host/emu_upload.mjs app/build/emu/app.wasm app/build/tests/webbeep.wasm"
 else
     echo "  skip emu (no emcc or node)"
 fi

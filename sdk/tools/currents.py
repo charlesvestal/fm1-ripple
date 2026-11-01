@@ -8,6 +8,8 @@ the host simulator.
   currents.py SRC... --host DIR           each source into DIR/NAME.so (this computer's cc), for the simulator
   currents.py SRC... --web DIR            each source as C in DIR (its entry rc_entry_NAME) and DIR/registry.c: a
                                           firmware's browser emulator links them all (fm1.toml web = [...])
+  currents.py SRC... --web-module DIR     each source into DIR/NAME.wasm (emcc): the current as a module of its own,
+                                          to upload to Ripple's emulator page beside its .cur (sdk/web/rc_module.c)
 
 A Faust current: its sliders become the current's parameters. With a "freq", a "gain" and a "gate", it is a voice,
 played polyphonically (declare voices "6" in the .dsp; default 6): notes set those three; with inputs, an effect.
@@ -396,6 +398,13 @@ def build_host(srcs, out_dir):
         print(f"host     {so.name}")
 
 
+def run_emcc(args, src):
+    r = subprocess.run(["emcc", *args], capture_output=True, text=True)
+    if r.returncode:
+        sys.stderr.write(r.stderr)
+        raise SystemExit(f"currents: {Path(src).name} did not compile for the emulator")
+
+
 def build_web(srcs, out_dir):
     """C sources for the emulator: a unit per current (it includes the current's own C with rc_entry renamed) and a
     registry of them by name (flow.c's PLAT_WEB lookup)"""
@@ -403,9 +412,41 @@ def build_web(srcs, out_dir):
     for old in out_dir.glob("*.c"):
         old.unlink()
     names = []
+    cxx_srcs = [s for s in srcs if s.suffix == ".cc"]
+    if cxx_srcs and not shutil.which("emcc"):
+        print(f"web      no emcc: {len(cxx_srcs)} C++ currents left out of the emulator")
+        cxx_srcs = []
+    if cxx_srcs:                                    # C++: compiled here (fm1-base compiles the web units as C), into
+        cdir = out_dir / "cxx"                      # one archive the emulator links (fm1.toml web_link)
+        if cdir.exists():
+            shutil.rmtree(cdir)
+        cdir.mkdir(parents=True)
+        done = {}
+        objs = []
+        base = ["-O2", "-ffp-contract=off", "-DPLAT_HOST", "-DPLAT_WEB", *CXXFLAGS, "-w",
+                "-I", str(SDK / "include"), "-I", str(BASE_INC)]
+        for src in cxx_srcs:
+            name = re.sub(r"\W", "_", src.stem)
+            more, xflags = extras(src)
+            xf = [str(x) for x in xflags]
+            o = cdir / f"cur_{name}.o"
+            run_emcc([*base, *xf, f"-Drc_entry=rc_entry_{name}", f"-DRC_WEB_ID={name}", "-c", str(src), "-o", str(o)], src)
+            objs.append(str(o))
+            for m in more:                          # the shared sources: once each, for their flags
+                key = (str(m.resolve()), tuple(xf))
+                if key not in done:
+                    mo = cdir / f"lib_{len(done)}_{m.stem}.o"
+                    run_emcc([*base, *xf, "-c", str(m), "-o", str(mo)], m)
+                    done[key] = str(mo)
+                    objs.append(str(mo))
+            names.append((src.stem, name))
+        lib = out_dir / "currents_cxx.a"
+        if lib.exists():
+            lib.unlink()
+        subprocess.run(["emar", "rcs", str(lib), *objs], check=True)
+        print(f"web      {len(cxx_srcs)} C++ currents in {lib.name}")
     for src in srcs:
-        if src.suffix == ".cc":                     # (C++ currents: not in the emulator yet)
-            print(f"web      {src.name}: C++, left out of the emulator")
+        if src.suffix == ".cc":
             continue
         name = re.sub(r"\W", "_", src.stem)
         c = faust_to_c(src, out_dir) if src.suffix == ".dsp" else src
@@ -430,12 +471,39 @@ def build_web(srcs, out_dir):
     print(f"web      {len(names)} currents in {out_dir}")
 
 
+def build_web_module(srcs, out_dir):
+    """each current with sdk/web/rc_module.c into a standalone WebAssembly module (NAME.wasm), for Ripple's emulator
+    page to run without it being linked in"""
+    if not shutil.which("emcc"):
+        raise SystemExit("currents: --web-module needs emcc (Emscripten)")
+    out_dir.mkdir(parents=True, exist_ok=True)
+    work = Path(tempfile.mkdtemp(prefix="currents-mod-"))
+    for src in srcs:
+        c = faust_to_c(src, work) if src.suffix == ".dsp" else src
+        name = re.sub(r"\W", "_", src.stem)
+        more, xflags = extras(src)
+        xf = [str(x) for x in xflags]
+        base = ["-O2", "-ffp-contract=off", "-DPLAT_WEB", f"-DRC_WEB_ID={name}", "-w", "-I", str(SDK / "include"),
+                "-I", str(SDK / "faust"), "-I", str(BASE_INC), "-I", str(work), *xf]
+        objs = []
+        for i, f in enumerate([c, *more, SDK / "web" / "rc_module.c"]):
+            o = work / f"{name}_{i}.o"
+            cpp = Path(f).suffix in (".cc", ".cpp")
+            run_emcc([*base, *(CXXFLAGS if cpp else ["-std=c99"]), "-c", str(f), "-o", str(o)], f)
+            objs.append(str(o))
+        wasm = out_dir / f"{src.stem}.wasm"
+        run_emcc(["-O2", "-sSTANDALONE_WASM", "--no-entry", "-sSTACK_SIZE=65536", "-sINITIAL_MEMORY=4194304",
+                  "-sFILESYSTEM=0", *objs, "-o", str(wasm)], src)
+        print(f"module   {wasm.name}  {wasm.stat().st_size} B")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("srcs", nargs="+", type=Path)
     ap.add_argument("--out", type=Path)
     ap.add_argument("--host", type=Path)
     ap.add_argument("--web", type=Path)
+    ap.add_argument("--web-module", type=Path)
     a = ap.parse_args()
     srcs = []                                       # a folder: its .dsp and .c files
     for s in a.srcs:
@@ -445,6 +513,8 @@ def main():
         build_host(srcs, a.host)
     if a.web:
         build_web(srcs, a.web)
+    if a.web_module:
+        build_web_module(srcs, a.web_module)
     if a.out:
         build_device(srcs, a.out)
     return 0

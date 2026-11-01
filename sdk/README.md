@@ -97,6 +97,23 @@ The paths are relative to the current's file, and the other files are built once
 the current uses is kept. `currents/plaits-va.cc` and `currents/plaits/plaits_current.h` are an example: one of
 Plaits' engines a current, from the same shared source.
 
+## In the emulator
+
+The emulator on Ripple's site has every built-in current linked in. To try your own there, its panel **Write your
+own** takes:
+
+- a Faust current: write it there (choose "a current (Faust)") or drop the `.dsp` on it, and Run compiles it in the
+  browser (Faust's WebAssembly compiler, loaded the first time). A droplet then loads it by its name.
+- a C or C++ current, built for the browser on your computer:
+
+  ```sh
+  sdk/tools/currents.py mysound.c --web-module build/      # build/mysound.wasm (Emscripten's emcc)
+  ```
+
+  Drop the `.wasm` on the panel. (The FM-1 takes the `.cur`, the emulator the `.wasm`: the same source.)
+
+The page keeps them in your browser and puts them back each time the emulator starts.
+
 ## How a current loads
 
 The `.cur` file is the current's code and data, linked at address 0, with a list of the addresses inside it. Its

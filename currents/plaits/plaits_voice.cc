@@ -40,6 +40,9 @@
 inline void* operator new(size_t, void* p) throw() { return p; }
 
 // an abstract class's vtable (Engine's, seen while a derived engine is being built) points here
+#ifdef PLAT_WEB
+__attribute__((weak))                       // (Ripple's emulator: one for every current linked in)
+#endif
 extern "C" void __cxa_pure_virtual(void) {
   for (;;) { }
 }

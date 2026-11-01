@@ -131,6 +131,10 @@ static void flow_push(uint8_t type, int cur, int a, float v)
     evq_w = w + 1u;
 }
 
+#ifdef PLAT_WEB
+static void js_reset(void);
+#endif
+
 /* everything out: no current plays, the arena is empty (leaving a droplet) */
 static void flow_reset(void)
 {
@@ -144,6 +148,9 @@ static void flow_reset(void)
 #endif
     evq_r = evq_w;
     route_set_n = 0;
+#ifdef PLAT_WEB
+    js_reset();                             /* the page's currents: their instances gone too */
+#endif
     ncurs = 0;
     arena_top = 0;
     sarena_top = 0;
@@ -253,22 +260,85 @@ static const rc_desc_t *cur_link(const char *path)
     return entry();
 }
 #elif defined(PLAT_WEB)
-/* the browser's emulator: every current linked in (sdk/tools/currents.py --web), found by name */
+/* the browser's emulator: every current linked in (sdk/tools/currents.py --web), found by name; else one the page
+ * runs itself (an uploaded .wasm build, or Faust compiled in the page: web/emu/app_worklet.js), through a proxy whose
+ * calls go to the page's JavaScript */
 struct rc_web { const char *name; const rc_desc_t *(*entry)(void); };
 extern const struct rc_web rc_web_list[];
+#define JS_IMPORT(n) __attribute__((import_module("env"), import_name(#n)))
+JS_IMPORT(rp_js_cur_find) int rp_js_cur_find(const char *name, int len);   /* its id + 1, 0 = the page has none */
+JS_IMPORT(rp_js_cur_info) void rp_js_cur_info(int id, void *info);         /* js_info_t, filled */
+JS_IMPORT(rp_js_cur_new) int rp_js_cur_new(int id, float sr);              /* an instance: its slot */
+JS_IMPORT(rp_js_cur_set) void rp_js_cur_set(int slot, int p, float v);
+JS_IMPORT(rp_js_cur_note) void rp_js_cur_note(int slot, int note, float vel);
+JS_IMPORT(rp_js_cur_process) void rp_js_cur_process(int slot, float *l, float *r, int n);
+JS_IMPORT(rp_js_cur_free_all) void rp_js_cur_free_all(void);
+typedef struct {
+    int32_t ins, voices, nparams;
+    struct { char name[24]; float min, max, def; } p[RC_MAX_PARAMS];
+    char name[16];
+} js_info_t;
+typedef struct { int32_t slot; } js_st_t;
+static js_info_t js_info[FLOW_MAX];
+static rc_param_t js_par[FLOW_MAX][RC_MAX_PARAMS];
+static rc_desc_t js_desc[FLOW_MAX];
+static int js_id[FLOW_MAX], js_n, js_pending;      /* each proxy's page id; the one being loaded */
+static void js_reset(void)
+{
+    js_n = 0;
+    rp_js_cur_free_all();
+}
+static void js_init(void *st, float sr) { ((js_st_t *)st)->slot = rp_js_cur_new(js_id[js_pending], sr); }
+static void js_set(void *st, int p, float v) { rp_js_cur_set(((js_st_t *)st)->slot, p, v); }
+static void js_note(void *st, int n, float v) { rp_js_cur_note(((js_st_t *)st)->slot, n, v); }
+static void js_process(void *st, float *l, float *r, int n) { rp_js_cur_process(((js_st_t *)st)->slot, l, r, n); }
+static const rc_desc_t *js_link(int id)
+{
+    int k = js_n++, i;
+    js_info_t *in = &js_info[k];
+    rc_desc_t *d = &js_desc[k];
+    memset(in, 0, sizeof *in);
+    rp_js_cur_info(id, in);
+    if (in->nparams < 0 || in->nparams > RC_MAX_PARAMS)
+        in->nparams = 0;
+    for (i = 0; i < in->nparams; i++) {
+        in->p[i].name[23] = 0;
+        js_par[k][i].name = in->p[i].name;
+        js_par[k][i].min = in->p[i].min;
+        js_par[k][i].max = in->p[i].max;
+        js_par[k][i].def = in->p[i].def;
+    }
+    in->name[15] = 0;
+    memset(d, 0, sizeof *d);
+    d->magic = RC_MAGIC;
+    d->abi = RC_ABI;
+    d->name = in->name;
+    d->state_size = sizeof(js_st_t);
+    d->ins = in->ins ? 2 : 0;
+    d->voices = (uint8_t)in->voices;
+    d->nparams = (uint16_t)in->nparams;
+    d->params = js_par[k];
+    d->init = js_init;
+    d->set = js_set;
+    d->note = in->voices ? js_note : 0;
+    d->process = js_process;
+    js_id[k] = id;
+    js_pending = k;
+    return d;
+}
 static const rc_desc_t *cur_link(const char *path)
 {
     const char *base = strrchr(path, '/') + 1;
     disk_file_t f;
     uint32_t i, n = (uint32_t)strlen(base) - 4u;
-    if (disk_open(path, &f) != 0) {
-        flow_err = "not on the disk";
-        return 0;
-    }
-    for (i = 0; rc_web_list[i].name; i++)
-        if (strlen(rc_web_list[i].name) == n && !strncmp(rc_web_list[i].name, base, n))
-            return rc_web_list[i].entry();
-    flow_err = "not in the emulator";
+    int id;
+    if (disk_open(path, &f) == 0)
+        for (i = 0; rc_web_list[i].name; i++)
+            if (strlen(rc_web_list[i].name) == n && !strncmp(rc_web_list[i].name, base, n))
+                return rc_web_list[i].entry();
+    if (js_n < FLOW_MAX && (id = rp_js_cur_find(base, (int)n)) > 0)
+        return js_link(id - 1);
+    flow_err = disk_open(path, &f) == 0 ? "not in the emulator" : "not on the disk";
     return 0;
 }
 #else

@@ -12,6 +12,19 @@
 // not decay by themselves; the others ring out as struck), level. Velocity is Plaits' accent (strike strength) and
 // the level. In two parts, the even voices and the odd: one for each core.
 #include "ripple_current.h"
+#ifdef PLAT_WEB   // the emulator links every current into one program: each one's C names made its own (RC_WEB_ID)
+#define PC_JOIN2(a, b) a##b
+#define PC_JOIN(a, b) PC_JOIN2(a, b)
+#define plaits_engine_name PC_JOIN(plaits_engine_name_, RC_WEB_ID)
+#define plaits_engine_object_bytes PC_JOIN(plaits_engine_object_bytes_, RC_WEB_ID)
+#define plaits_engine_buffer_bytes PC_JOIN(plaits_engine_buffer_bytes_, RC_WEB_ID)
+#define plaits_voice_bytes PC_JOIN(plaits_voice_bytes_, RC_WEB_ID)
+#define plaits_voice_init PC_JOIN(plaits_voice_init_, RC_WEB_ID)
+#define plaits_voice_buffer_used PC_JOIN(plaits_voice_buffer_used_, RC_WEB_ID)
+#define plaits_voice_retrigger PC_JOIN(plaits_voice_retrigger_, RC_WEB_ID)
+#define plaits_voice_render PC_JOIN(plaits_voice_render_, RC_WEB_ID)
+#define plaits_core_sp PC_JOIN(plaits_core_sp_, RC_WEB_ID)
+#endif
 #include "plaits_voice.cc"
 
 extern "C" {
