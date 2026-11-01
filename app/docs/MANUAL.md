@@ -250,10 +250,10 @@ printed. Press HOME to go back to the list. Fix the file in disk mode and try ag
 ## 7. Writing your own
 
 A droplet is a Lua file: its functions answer the keys, knobs and buttons, draw the screen and play notes on
-currents. For the whole API, see [Writing droplets](DROPLETS.md).
+currents. For the whole API, see [Writing droplets](https://github.com/charlesvestal/fm1-ripple/blob/main/docs/DROPLETS.md).
 
 A current is a sound, written in Faust or C and built into a `.cur` file on a computer. For the SDK, see
-[Writing currents](../sdk/README.md).
+[Writing currents](https://github.com/charlesvestal/fm1-ripple/blob/main/sdk/README.md).
 
 To change a built-in droplet, copy it from `builtin/droplets` in Ripple's source onto the disk and edit it there.
 

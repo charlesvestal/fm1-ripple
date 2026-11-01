@@ -42,7 +42,7 @@ The built-in droplets:
 | poly | A six-voice synth through a delay |
 | rain | Plucked notes falling on a scale into a reverb |
 
-For their controls, see [the manual](docs/MANUAL.md).
+For their controls, see [the manual](app/docs/MANUAL.md).
 
 Each keeps its settings when you press SAVE (beat, euclid and loop their patterns too).
 
