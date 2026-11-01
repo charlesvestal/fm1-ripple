@@ -48,7 +48,7 @@ Define any of these and Ripple calls them. Leave out the ones you don't need.
 | `key(k, vel)` | A key is pressed (`vel` 1 to 127) or released (`vel` 0). `k` is 0 for the lowest key (F3) to 26 |
 | `button(name, z)` | A button is pressed (`z` 1) or released (`z` 0). Names as printed: `"PLAY"`, `"REC"`, `"OCT-"`, `"OCT+"`, `"FX"`, `"SEL"`, `"ENV"`, `"LFO"`, `"EDIT"`, `"GLO"`, `"HOME"`, `"SAVE"`, `"ARP"`, `"SEQ"` |
 | `enc(n, d)` | A knob turns by `d` steps. `n` is 1 to 4 for K1 to K4, 5 for SELECT, 6 for ALGORITHM, 7 for PRESET |
-| `midi(b0, b1, b2)` | A MIDI message arrives over USB or the MIDI jack |
+| `midi_in(b0, b1, b2)` | A MIDI message arrives over USB or the MIDI jack |
 | `frame()` | About 30 times a second, for animation |
 | `cleanup()` | When the droplet stops |
 

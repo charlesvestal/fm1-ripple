@@ -627,6 +627,27 @@ void app_frame(void)
 }
 
 #ifdef PLAT_HOST
+int app_host_cmd(const char *cmd, const char *a, const char *b, const char *c, const char *d)
+{
+    int i;
+    char name[48];
+    (void)b, (void)c, (void)d;
+    if (strcmp(cmd, "start"))
+        return 0;
+    snprintf(name, sizeof name, "%s.lua", a);
+    if (ui.mode != MODE_LIST)
+        go_list();
+    for (i = 0; i < ui.n; i++)
+        if (!strcmp(ui.names[i], name)) {
+            ui.sel = i;
+            start(i);
+            printf("  ok   start %s\n", a);
+            return 1;
+        }
+    printf("FAIL start %s: no such droplet\n", a);
+    return 1;
+}
+
 int app_expect(const char *what, int *got)
 {
     if (!strcmp(what, "mode"))

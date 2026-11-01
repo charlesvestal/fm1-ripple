@@ -23,6 +23,9 @@ run() {
 run host-build sh build.sh --host
 run droplets env RIPPLE_CURRENTS=app/build/currents-host app/build/host/ripple_host tests/scenarios/droplets.txt \
     app/build/scenarios/droplets
+mkdir -p app/build/scenarios/examples
+run examples env RIPPLE_CURRENTS=app/build/currents-host app/build/host/ripple_host tests/scenarios/examples.txt \
+    app/build/scenarios/examples
 run selftest sh tests/selftest.sh
 [ $FAIL -eq 0 ] && echo "all tests passed" || echo "TESTS FAILED"
 exit $FAIL

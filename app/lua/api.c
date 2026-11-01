@@ -10,7 +10,7 @@
  *   midi     send(b0, b1, b2)
  *   led      key(k, on) button(name, on)
  *   util     ms() note(k)
- * A droplet defines what it answers: init() key(k, vel) button(name, z) enc(n, d) midi(b0, b1, b2) frame()
+ * A droplet defines what it answers: init() key(k, vel) button(name, z) enc(n, d) midi_in(b0, b1, b2) frame()
  * redraw() cleanup(). */
 #include "ripple.h"
 
@@ -417,7 +417,7 @@ void lr_midi(int b0, int b1, int b2)
     lua_pushinteger(LS, b0);
     lua_pushinteger(LS, b1);
     lua_pushinteger(LS, b2);
-    lr_call("midi", 3);
+    lr_call("midi_in", 3);
 }
 void lr_tick(uint32_t ms)
 {

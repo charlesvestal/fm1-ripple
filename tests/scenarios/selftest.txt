@@ -3,10 +3,8 @@ wait 600
 data app/build/scenarios/selftest/selftest.img 0x97000
 reboot
 wait 600
-expect droplets 5
-turn SELECT 4
-wait 50
-tap PLAY
+expect droplets 13
+start selftest
 wait 300
 expect error 0
 expect mode 1
