@@ -8,6 +8,8 @@
 import fs from "fs";
 import path from "path";
 import { pathToFileURL } from "url";
+delete globalThis.TextEncoder;              // (as in an AudioWorklet, which has neither: the page's part must not need them)
+delete globalThis.TextDecoder;
 await import(pathToFileURL(path.resolve("app/web/emu/app_worklet.js")).href);
 const app = globalThis.fm1App;
 const said = [];

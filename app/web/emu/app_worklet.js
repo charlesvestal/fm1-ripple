@@ -13,7 +13,34 @@ let said = "";              // the last state sent to the page
 let hello = false;
 let ticks = 0;              // quanta (the state goes to the page every 16)
 
-const enc = new TextEncoder(), dec = new TextDecoder();
+// UTF-8 both ways (an AudioWorklet has no TextEncoder or TextDecoder)
+const enc = {
+  encode(s) {
+    const out = [];
+    for (const ch of String(s)) {
+      let c = ch.codePointAt(0);
+      if (c < 0x80) out.push(c);
+      else if (c < 0x800) out.push(0xC0 | c >> 6, 0x80 | c & 63);
+      else if (c < 0x10000) out.push(0xE0 | c >> 12, 0x80 | c >> 6 & 63, 0x80 | c & 63);
+      else out.push(0xF0 | c >> 18, 0x80 | c >> 12 & 63, 0x80 | c >> 6 & 63, 0x80 | c & 63);
+    }
+    return Uint8Array.from(out);
+  },
+};
+const dec = {
+  decode(b) {
+    let s = "";
+    for (let i = 0; i < b.length;) {
+      const c = b[i++];
+      let cp = c;
+      if (c >= 0xF0) cp = (c & 7) << 18 | (b[i++] & 63) << 12 | (b[i++] & 63) << 6 | (b[i++] & 63);
+      else if (c >= 0xE0) cp = (c & 15) << 12 | (b[i++] & 63) << 6 | (b[i++] & 63);
+      else if (c >= 0xC0) cp = (c & 31) << 6 | (b[i++] & 63);
+      s += String.fromCodePoint(cp);
+    }
+    return s;
+  },
+};
 const u8 = (m, p, n) => new Uint8Array(m.buffer, p, n);
 const f32 = (m, p, n) => new Float32Array(m.buffer, p, n);
 function cstr(m, p) {

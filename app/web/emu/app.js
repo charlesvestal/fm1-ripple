@@ -240,7 +240,16 @@ function build() {
 #rp ul { list-style: none; padding: 0; margin: 10px 0 0; }
 #rp li { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 6px 0; border-top: 1px solid var(--rule); }
 #rp li > span:first-child { font-weight: 600; min-width: 7em; }
-#rp .rp-kind { color: var(--muted); flex: 1; }`;
+#rp .rp-kind { color: var(--muted); flex: 1; }
+/* a wide window: the panel beside the FM-1, in view while you play (narrower: under it) */
+@media (min-width: 1200px) {
+  body > header, main { max-width: min(1720px, 96vw); }
+  main { display: grid; grid-template-columns: minmax(560px, 1.15fr) minmax(440px, 1fr); column-gap: 28px; align-items: start; }
+  main > * { grid-column: 1; }
+  main > #rp { grid-column: 2; grid-row: 1 / span 40; position: sticky; top: 12px; margin: 0;
+    max-height: calc(100vh - 24px); overflow: auto; }
+  #rp textarea { min-height: max(300px, calc(100vh - 430px)); }
+}`;
   document.head.append(css);
   const sec = document.createElement("section");
   sec.id = "rp";
