@@ -1,0 +1,4 @@
+/* SPDX-License-Identifier: MIT */
+/* LOOM-8: <cmath> for the Plaits units: no C++ library in the toolchain; float functions only (math.h) */
+#pragma once
+#include <math.h>

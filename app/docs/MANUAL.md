@@ -232,6 +232,10 @@ Play FX, as e16-launcher has them.
 | OCT− · OCT+ | Move the keys an octave. |
 | SAVE | Keeps the rack: its currents, their knobs, the MIDI effects. |
 
+Among the voices are seventeen of Mutable Instruments Plaits' engines (`plaits-va`, `plaits-modal`, `plaits-kick` and
+the rest): K1–K3 are Plaits' harmonics, timbre and morph. Three more (`plaits-wave`, `plaits-dx`, `plaits-speech`)
+are on each release, to copy into `currents` on the disk in disk mode.
+
 The top of the screen shows how busy the sound is and how much room is left for currents. A current that does not
 fit says so at the bottom, and its slot stays empty.
 

@@ -12,7 +12,13 @@ the host simulator.
 A Faust current: its sliders become the current's parameters. With a "freq", a "gain" and a "gate", it is a voice,
 played polyphonically (declare voices "6" in the .dsp; default 6): notes set those three; with inputs, an effect.
 A source may be a folder: its .dsp and .c files.
-A C current: writes its own rc_desc_t (sdk/include/ripple_current.h) and RC_EXPORT()s it.
+A C current: writes its own rc_desc_t (sdk/include/ripple_current.h) and RC_EXPORT()s it. A C++ current (.cc) the
+same, freestanding: no exceptions, RTTI, thread-safe statics or C++ library, and nothing that needs a constructor
+run (the build refuses it). Either may say, in its own lines,
+  // ripple-sources: plaits/plaits/**/*.cc ...    more files built and linked in (globs, relative to the file)
+  // ripple-cflags: -Iplaits -DTEST ...           flags for it and them (-I relative to the file)
+The other sources are built once for each set of flags (sdk/build/obj/) and only what the current reaches is kept.
+The browser's emulator leaves C++ currents out.
 
 Faust's C for a .dsp is kept in gen/ beside it: made again where Faust is installed, used as it is where it is not.
 
@@ -34,6 +40,31 @@ ROOT = SDK.parent                                   # the repository: mounted as
 BASE_INC = ROOT / "base" / "include"
 CFLAGS = ["-ffunction-sections", "-fdata-sections", "-fno-builtin", "-Wall", "-Wno-unused-function",
           "-Wdouble-promotion", "-ffp-contract=off"]
+CXXFLAGS = ["-std=c++11", "-nostdinc++", "-fno-exceptions", "-fno-rtti", "-fno-threadsafe-statics",
+            "-DRIPPLE_CURRENT", "-Wno-unused-private-field", "-Wno-unused-local-typedef", "-Wno-unused-variable"]
+
+
+def extras(src):
+    """a current's own lines: the more sources it links (globs, relative to it) and its flags (-I relative to it)"""
+    if src.suffix not in (".c", ".cc"):
+        return [], []
+    more, flags = [], []
+    for line in src.read_text().splitlines()[:60]:
+        m = re.match(r"\s*(?://|/\*|\*)\s*ripple-(sources|cflags):\s*(.*?)\s*(?:\*/)?$", line)
+        if not m:
+            continue
+        for w in m.group(2).split():
+            if m.group(1) == "sources":
+                more += sorted(p for p in src.parent.glob(w) if p.resolve() != src.resolve())
+            elif w.startswith("-I"):                # (a Path of its own: the toolchain's container sees it at /work)
+                flags += ["-I", (src.parent / w[2:]).resolve()]
+            else:
+                flags.append(w)
+    return more, flags
+
+
+def lang(f):
+    return CXXFLAGS if Path(f).suffix in (".cc", ".cpp") else []
 
 # ------------------------------------------------------------------ Faust ---
 UI_RE = re.compile(r'ui_interface->(addHorizontalSlider|addVerticalSlider|addNumEntry|addButton|addCheckButton)\('
@@ -305,15 +336,34 @@ def build_device(srcs, out_dir):
         c = faust_to_c(src, work) if src.suffix == ".dsp" else src
         name = src.stem
         obj, elf = work / f"{name}.o", work / f"{name}.elf"
-        tc("pi32v2/bin/clang", "-target", "pi32v2", "-mcpu=r3", "-mfprev1", "-O2", *CFLAGS,
-           "-I", SDK / "include", "-I", SDK / "faust", "-I", BASE_INC, "-I", work, "-c", c, "-o", obj)
-        tc("pi32v2/bin/ld", "-q", "--gc-sections", "-T", work / "current.ld", obj,
+        more, xflags = extras(src)
+        base = ["-target", "pi32v2", "-mcpu=r3", "-mfprev1", "-O2", *CFLAGS, "-I", SDK / "include",
+                "-I", SDK / "faust", "-I", BASE_INC, "-I", work, *xflags]
+        tc("pi32v2/bin/clang", *base, *lang(c), "-c", c, "-o", obj)
+        objs = [obj]
+        if more:                                    # built once for these flags, again only when a source changes
+            odir = work / "obj" / hashlib.sha1(" ".join(map(str, base)).encode()).hexdigest()[:10]
+            odir.mkdir(parents=True, exist_ok=True)
+            for m in more:
+                o = odir / (hashlib.sha1(str(m.resolve()).encode()).hexdigest()[:8] + "_" + m.stem + ".o")
+                if not o.exists() or o.stat().st_mtime < m.stat().st_mtime:
+                    tc("pi32v2/bin/clang", *base, *lang(m), "-c", m, "-o", o)
+                objs.append(o)
+        tc("pi32v2/bin/ld", "-q", "--gc-sections", "-T", work / "current.ld", *objs,
            "/opt/jieli/pi32v2/lib/r3/libcompiler_rt.a" if use_docker() else str(toolchain() / "pi32v2/lib/r3/libcompiler_rt.a"),
            "-o", elf)
         syms = tc("common/bin/objdump", "-t", elf)
         soft = re.findall(r"\s(__\w*df\w*)$", syms, re.M)
         if soft:
             raise SystemExit(f"currents: {src.name}: soft-double routines {soft[:4]} (a double in the code)")
+        # nothing runs constructors, unwinds or links a C++ library: a current that needs one is refused
+        heads = tc("common/bin/objdump", "-h", elf)
+        bad = [x for x in (".init_array", ".ctors", ".eh_frame", ".gcc_except_table") if re.search(r"\s" + re.escape(x) + r"\b", heads)]
+        cxx = sorted(set(re.findall(r"\s(__cxa_\w+|_Znw\w*|_Zdl\w*|__dso_handle|__gxx_personality\w*)$", syms, re.M))
+                     - {"__cxa_pure_virtual"})
+        undef = re.findall(r"\*UND\*\s+\S+\s+(\S+)$", syms, re.M)
+        if bad or cxx or undef:
+            raise SystemExit(f"currents: {src.name}: {bad or ''} {cxx[:4] or ''} {('undefined: ' + ' '.join(undef[:6])) if undef else ''}")
         n_img, n_bss, n_rel = pack(elf, out_dir / f"{name}.cur")
         print(f"current  {name}.cur  code+data {n_img} B, zeroed {n_bss} B, {n_rel} relocations")
 
@@ -322,15 +372,27 @@ def build_host(srcs, out_dir):
     out_dir.mkdir(parents=True, exist_ok=True)
     work = Path(tempfile.mkdtemp(prefix="currents-"))
     cc = os.environ.get("CC", "cc")
+    cxx = os.environ.get("CXX", "c++")
     for src in srcs:
         c = faust_to_c(src, work) if src.suffix == ".dsp" else src
         so = out_dir / f"{src.stem}.so"
-        r = subprocess.run([cc, "-O2", "-shared", "-fPIC", "-ffp-contract=off", "-std=c99", "-w",
-                            "-I", str(SDK / "include"), "-I", str(SDK / "faust"), "-I", str(BASE_INC), "-I", str(work),
-                            str(c), "-o", str(so)], capture_output=True, text=True)
+        more, xflags = extras(src)
+        inc = ["-I", str(SDK / "include"), "-I", str(SDK / "faust"), "-I", str(BASE_INC), "-I", str(work), *map(str, xflags)]
+        objs = []
+        for f in [c, *more]:
+            o = work / (hashlib.sha1(str(Path(f).resolve()).encode()).hexdigest()[:8] + ".o")
+            cpp = Path(f).suffix in (".cc", ".cpp")
+            r = subprocess.run([cxx if cpp else cc, "-O2", "-fPIC", "-ffp-contract=off", "-w",
+                                *(["-std=c99"] if not cpp else CXXFLAGS), *inc, "-c", str(f), "-o", str(o)],
+                               capture_output=True, text=True)
+            if r.returncode:
+                sys.stderr.write(r.stderr)
+                raise SystemExit(f"currents: {Path(f).name} ({src.name}) did not compile for the host")
+            objs.append(str(o))
+        r = subprocess.run([cxx if src.suffix == ".cc" else cc, "-shared", *objs, "-o", str(so)], capture_output=True, text=True)
         if r.returncode:
             sys.stderr.write(r.stderr)
-            raise SystemExit(f"currents: {src.name} did not compile for the host")
+            raise SystemExit(f"currents: {src.name} did not link for the host")
         print(f"host     {so.name}")
 
 
@@ -342,6 +404,9 @@ def build_web(srcs, out_dir):
         old.unlink()
     names = []
     for src in srcs:
+        if src.suffix == ".cc":                     # (C++ currents: not in the emulator yet)
+            print(f"web      {src.name}: C++, left out of the emulator")
+            continue
         name = re.sub(r"\W", "_", src.stem)
         c = faust_to_c(src, out_dir) if src.suffix == ".dsp" else src
         unit = out_dir / f"cur_{name}.c"
@@ -375,7 +440,7 @@ def main():
     srcs = []                                       # a folder: its .dsp and .c files
     for s in a.srcs:
         s = s.resolve()
-        srcs += sorted([*s.glob("*.dsp"), *s.glob("*.c")]) if s.is_dir() else [s]
+        srcs += sorted([*s.glob("*.dsp"), *s.glob("*.c"), *s.glob("*.cc")]) if s.is_dir() else [s] if s.exists() else []
     if a.host:
         build_host(srcs, a.host)
     if a.web:

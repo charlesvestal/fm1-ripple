@@ -1,0 +1,8 @@
+/* SPDX-License-Identifier: MIT */
+/* LOOM-8: <cstring> for the Plaits units: the firmware's own memset / memcpy (firmware/src/libc.c) */
+#pragma once
+#include <stddef.h>
+extern "C" {
+void *memset(void *d, int c, size_t n);
+void *memcpy(void *d, const void *s, size_t n);
+}

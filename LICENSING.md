@@ -8,6 +8,7 @@
 | The SDK (`sdk/`), the currents (`currents/`) and the built-in droplets (`builtin/`) | MIT (`sdk/LICENSE`) |
 | `currents/sophie.c` | MIT: from Sophie 0.6.0 (github.com/mestela/schwung-sophie), Copyright (c) 2026 Matt Estela and the digisophie contributors, as SPH-16 ported it |
 | `currents/monk.c` | MIT: from MonkSynth (github.com/JonET/monksynth), Copyright (c) 2026 Jonathan Taylor, as MONK-1 ported it |
+| Mutable Instruments Plaits and stmlib (`currents/plaits/`) | MIT, Copyright (c) Emilie Gillet (`currents/plaits/LICENSE`); Plaits 1.2's DSP as LOOM-8 built it freestanding for the FM-1 (44.1 kHz, no ARM code, the random state per core), and the wavetable engine's map sized for its four banks |
 | The MIDI effects engine (`app/midifx/`) | MIT: from e16-launcher (github.com/charlesvestal/e16-launcher, apps/midifx/core), its sizes and 64-bit multiplies changed for the FM-1 |
 
 A current or a droplet you write may use any licence: the SDK's header and tools are MIT, and the C that Faust

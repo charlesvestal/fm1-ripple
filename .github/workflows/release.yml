@@ -71,6 +71,7 @@ jobs:
           ./build.sh --release "$version"
           cp "app/build/$pkg-$version.fwsc" build/release-assets/
           cp "app/build/$pkg.bin" "build/release-assets/$pkg-$version-app.bin"
+          cp app/build/extra/*.cur build/release-assets/      # currents for the disk, not built in
           # (the tests check the update path against app/build/$pkg.fwsc: there, the release package itself)
           cp "app/build/$pkg-$version.fwsc" "app/build/$pkg.fwsc"
         else

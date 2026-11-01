@@ -50,6 +50,11 @@ The built-in droplets:
 
 For their controls, see [the manual](app/docs/MANUAL.md).
 
+Besides the six currents of 0.1 and `monk` and `sophie`, seventeen of Mutable Instruments Plaits' engines are built in
+as currents of their own (`plaits-va`, `plaits-modal`, `plaits-kick` and the rest): play them with the rack. Three more
+(`plaits-wave`, `plaits-dx`, `plaits-speech`) are on each release as files to copy into `currents` on the disk: the
+firmware has no room left for them.
+
 Each keeps its settings when you press SAVE (beat, euclid and loop their patterns too).
 
 ## Writing your own
@@ -72,7 +77,8 @@ builds the firmware with fm1-base (`base/`). `disk/` is the empty disk a new FM-
 
 Ripple is MPL-2.0, on fm1-base and felucca-bsp (from Felucca by Leo Kuroshita, Hügelton Instruments). The SDK
 (`sdk/`), the built-in currents and droplets are MIT: `sophie` from Sophie by Matt Estela and the digisophie
-contributors, `monk` from MonkSynth by Jonathan Taylor. The MIDI effects are e16-launcher's engine (MIT). Lua 5.4 is MIT (Lua.org, PUC-Rio), with the changes listed in
+contributors, `monk` from MonkSynth by Jonathan Taylor, the `plaits-*` currents from Mutable Instruments Plaits by
+Emilie Gillet. The MIDI effects are e16-launcher's engine (MIT). Lua 5.4 is MIT (Lua.org, PUC-Rio), with the changes listed in
 `app/third_party/lua-5.4.7/PATCHES.md`. Currents are written in Faust (GRAME); the code Faust generates is the
 current's own. For details, see [LICENSING.md](LICENSING.md).
 

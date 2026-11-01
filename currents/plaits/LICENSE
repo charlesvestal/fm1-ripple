@@ -1,0 +1,13 @@
+Mutable Instruments Plaits DSP
+Copyright (c) 2014-2015 Emilie Gillet
+License: MIT
+Source: https://github.com/pichenettes/eurorack/tree/master/plaits
+
+stmlib
+Copyright (c) 2014 Emilie Gillet
+License: MIT
+Source: https://github.com/pichenettes/eurorack/tree/master/stmlib
+
+The MIT terms are in each file's header and in stmlib/LICENSE. Copied from the
+move-anything-plaits port (Plaits 1.2, its six-op engine cut to one voice); LOOM-8's changes are
+marked "LOOM-8" in the files. plaits_voice.* and shim/ are LOOM-8's, under the same MIT terms.

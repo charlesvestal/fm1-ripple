@@ -79,6 +79,24 @@ A current has no C library and no calls into the firmware. Use `fastmath.h` for 
 and use `float`, never `double`: the FM-1's FPU is single precision, and the build refuses a current with a double
 in it.
 
+## In C++
+
+A current may be C++ (`.cc`), freestanding: no exceptions, RTTI, thread-safe statics or C++ library, and nothing that
+needs a constructor run before it starts (the build refuses a current that does). Export the descriptor with
+`extern "C" RC_EXPORT(D)`. There is no C library either: a current that needs `memset` or `memcpy` (C++ calls them
+for its zeroing and copies) brings its own.
+
+A current made of more files names them, and its flags, in lines of its own:
+
+```c
+// ripple-sources: plaits/plaits/**/*.cc plaits/stmlib/**/*.cc
+// ripple-cflags: -Iplaits/shim -Iplaits -DTEST
+```
+
+The paths are relative to the current's file, and the other files are built once for each set of flags; only what
+the current uses is kept. `currents/plaits-va.cc` and `currents/plaits/plaits_current.h` are an example: one of
+Plaits' engines a current, from the same shared source.
+
 ## How a current loads
 
 The `.cur` file is the current's code and data, linked at address 0, with a list of the addresses inside it. Its

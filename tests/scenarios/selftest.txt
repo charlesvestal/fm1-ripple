@@ -3,7 +3,7 @@ wait 600
 data app/build/scenarios/selftest/selftest.img 0x97000
 reboot
 wait 600
-expect droplets 17
+expect droplets 18
 start selftest
 wait 300
 expect error 0
@@ -186,4 +186,230 @@ release SEQ
 expect_out USB 90 40 64
 expect_out USB 90 3C 64
 out
+expect error 0
+press HOME
+wait 1200
+release HOME
+wait 100
+# every Plaits engine (tests/disk/droplets/plaitstest.lua): the 17 built in, then plaits-dx, -speech and -wave from
+# the disk, each model of them: loaded alone, a note struck, its sound
+start plaitstest
+wait 300
+expect error 0
+tap EDIT
+wait 100
+expect error 0
+peakreset
+key 12 down 110
+wait 300
+key 12 up
+wait 150
+expect peak_db_min -50
+tap EDIT
+wait 100
+expect error 0
+peakreset
+key 12 down 110
+wait 300
+key 12 up
+wait 150
+expect peak_db_min -50
+tap EDIT
+wait 100
+expect error 0
+peakreset
+key 12 down 110
+wait 300
+key 12 up
+wait 150
+expect peak_db_min -50
+tap EDIT
+wait 100
+expect error 0
+peakreset
+key 12 down 110
+wait 300
+key 12 up
+wait 150
+expect peak_db_min -50
+tap EDIT
+wait 100
+expect error 0
+peakreset
+key 12 down 110
+wait 300
+key 12 up
+wait 150
+expect peak_db_min -50
+tap EDIT
+wait 100
+expect error 0
+peakreset
+key 12 down 110
+wait 300
+key 12 up
+wait 150
+expect peak_db_min -50
+tap EDIT
+wait 100
+expect error 0
+peakreset
+key 12 down 110
+wait 300
+key 12 up
+wait 150
+expect peak_db_min -50
+tap EDIT
+wait 100
+expect error 0
+peakreset
+key 12 down 110
+wait 300
+key 12 up
+wait 150
+expect peak_db_min -50
+tap EDIT
+wait 100
+expect error 0
+peakreset
+key 12 down 110
+wait 300
+key 12 up
+wait 150
+expect peak_db_min -50
+tap EDIT
+wait 100
+expect error 0
+peakreset
+key 12 down 110
+wait 300
+key 12 up
+wait 150
+expect peak_db_min -50
+tap EDIT
+wait 100
+expect error 0
+peakreset
+key 12 down 110
+wait 300
+key 12 up
+wait 150
+expect peak_db_min -50
+tap EDIT
+wait 100
+expect error 0
+peakreset
+key 12 down 110
+wait 300
+key 12 up
+wait 150
+expect peak_db_min -50
+tap EDIT
+wait 100
+expect error 0
+peakreset
+key 12 down 110
+wait 300
+key 12 up
+wait 150
+expect peak_db_min -50
+tap EDIT
+wait 100
+expect error 0
+peakreset
+key 12 down 110
+wait 300
+key 12 up
+wait 150
+expect peak_db_min -50
+tap EDIT
+wait 100
+expect error 0
+peakreset
+key 12 down 110
+wait 300
+key 12 up
+wait 150
+expect peak_db_min -50
+tap EDIT
+wait 100
+expect error 0
+peakreset
+key 12 down 110
+wait 300
+key 12 up
+wait 150
+expect peak_db_min -50
+tap EDIT
+wait 100
+expect error 0
+peakreset
+key 12 down 110
+wait 300
+key 12 up
+wait 150
+expect peak_db_min -50
+tap EDIT
+wait 100
+expect error 0
+peakreset
+key 12 down 110
+wait 300
+key 12 up
+wait 150
+expect peak_db_min -50
+tap EDIT
+wait 100
+expect error 0
+peakreset
+key 12 down 110
+wait 300
+key 12 up
+wait 150
+expect peak_db_min -50
+tap EDIT
+wait 100
+expect error 0
+peakreset
+key 12 down 110
+wait 300
+key 12 up
+wait 150
+expect peak_db_min -50
+tap EDIT
+wait 100
+expect error 0
+peakreset
+key 12 down 110
+wait 300
+key 12 up
+wait 150
+expect peak_db_min -50
+tap EDIT
+wait 100
+expect error 0
+peakreset
+key 12 down 110
+wait 300
+key 12 up
+wait 150
+expect peak_db_min -50
+tap EDIT
+wait 100
+expect error 0
+peakreset
+key 12 down 110
+wait 300
+key 12 up
+wait 150
+expect peak_db_min -50
+tap EDIT
+wait 100
+expect error 0
+peakreset
+key 12 down 110
+wait 300
+key 12 up
+wait 150
+expect peak_db_min -50
 expect error 0
