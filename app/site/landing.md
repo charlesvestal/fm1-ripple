@@ -10,6 +10,7 @@ put the FM-1 in disk mode: it shows up on your computer as a USB drive, and you 
 
 Version {{VERSION}}. Installing is at your own risk; the installer can put M-VAVE's own firmware back.
 
+- [Try it in the browser](emu/): the same code the FM-1 runs, with sound. No FM-1 needed.
 - [Install](install/): from Chrome or Edge, with the FM-1 connected by USB.
 - [Manual](manual/): the list, the twelve droplets, disk mode, saving.
 - [Writing droplets](https://github.com/charlesvestal/fm1-ripple/blob/main/docs/DROPLETS.md): the Lua API.
