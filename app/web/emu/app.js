@@ -54,6 +54,56 @@ process = (os.sawtooth(freq) + os.square(freq * 1.005)) * 0.5
 `;
 
 let node = null, ready = false, nextId = 1, faust = null;
+let running = "";                          // the droplet the FM-1 runs now ("" the list), from the worklet's state
+
+// _try: a droplet the page writes to play a current on its own: the keys play it (an effect: after a Plaits voice),
+// K1-K4 its first four knobs
+const TRY = "_try";
+const tryDroplet = (name) => `-- _try: written by the emulator page, to play the current ${name}
+local c, src, ps, vals = nil, nil, {}, {}
+function init()
+  c = current.load("${name}")
+  if c.voices == 0 then
+    src = current.load("plaits-va")
+    flow.set(src, c)
+  else
+    src = c
+    flow.set(c, current.load("plate"))
+  end
+  ps = c:params()
+  for i, p in ipairs(ps) do vals[i] = p.default end
+end
+function key(k, vel) src:note(util.note(k), vel / 127) end
+function enc(n, d)
+  local p = ps[n]
+  if n <= 4 and p then
+    local step = (p.max - p.min) / 100
+    if p.max - p.min <= 16 and p.min == math.floor(p.min) then step = 1 end
+    vals[n] = util.clamp(vals[n] + d * step, p.min, p.max)
+    c:set(n, vals[n])
+    redraw()
+  end
+end
+function redraw()
+  screen.clear()
+  screen.font(4)
+  screen.level(15)
+  screen.text(12, 12, "${name}")
+  screen.font(1)
+  screen.level(8)
+  screen.text(12, 50, c.voices == 0 and "an effect, after plaits-va: the keys play" or "the keys play it")
+  for i = 1, 4 do
+    local p = ps[i]
+    if p then
+      screen.level(8)
+      screen.text(12, 80 + i * 26, "K" .. i .. "  " .. p.name)
+      screen.level(15)
+      screen.text_right(228, 80 + i * 26, string.format(math.abs(vals[i]) >= 100 and "%.0f" or "%.2f", vals[i]))
+    end
+  end
+  screen.update()
+end
+`;
 const waiting = new Map();
 const $ = (id) => document.getElementById(id);
 
@@ -156,14 +206,21 @@ function download(name, data) {
 
 async function runDroplet(name, text) {
   if (!ready) return say("Switch the emulator on first.", true);
+  const again = running === name + ".lua";
   const r = await ask({ what: "droplet", name, text, run: true });
-  say(r.ok ? `${name} is running. Hold HOME for a second to go back to the list.` : `${name}: ${r.error}`, !r.ok);
+  say(r.ok ? `${name} ${again ? "started again, with what is in the box" : "is running"}. Hold HOME for a second to go back ` +
+             "to the list." : `${name}: ${r.error}`, !r.ok);
 }
 
+// which language the box holds, by its look: Faust's process = / import(...), else Lua
+const looksFaust = (t) => /^\s*process\s*=/m.test(t) || /import\s*\(\s*"stdfaust\.lib"\s*\)/.test(t);
+
 async function run() {
-  const kind = $("rp-kind").value, name = clean($("rp-name").value), text = $("rp-code").value;
+  const text = $("rp-code").value, kind = looksFaust(text) ? "current" : "droplet", name = clean($("rp-name").value);
+  $("rp-kind").value = kind;
   if (!name) return say("Give it a name: letters, digits, _ or -, eight at most.", true);
   $("rp-name").value = name;
+  try { localStorage.setItem(KEY + "-draft", JSON.stringify({ kind, name, text })); } catch {}
   if (kind === "droplet") {
     files.droplets[name] = text;
     save(files);
@@ -179,8 +236,17 @@ async function run() {
     save(files);
     draw();
     const c = r.current;
-    say(`${name} is ready: ${c.voices ? `a voice of ${c.voices} notes` : c.ins ? "an effect" : "a sound"}` +
-        `${c.params.length ? ", knobs " + c.params.join(", ") : ""}. A droplet loads it with current.load("${name}").`);
+    const what = c.voices ? `a voice of ${c.voices} notes` : c.ins ? "an effect" : "a sound";
+    // play it: the running droplet again if it is one of yours that loads it (it picks up this version), else _try
+    const mine = running.replace(/\.lua$/, "");
+    const uses = files.droplets[mine] && files.droplets[mine].includes(`"${name}"`);
+    const host = uses ? mine : TRY;
+    const p = await ask({ what: "droplet", name: host, text: uses ? files.droplets[mine] : tryDroplet(name), run: true });
+    if (!p.ok) throw new Error(p.error);
+    say(uses ? `${name} (${what}) is compiled, and ${mine} started again to play this version.`
+             : `${name} (${what}) is compiled and playing in _try: the keys play it` +
+               `${c.params.length ? ", K1–K4 its knobs (" + c.params.slice(0, 4).join(", ") + ")" : ""}. ` +
+               `In your own droplet: current.load("${name}").`);
   } catch (e) {
     say(`${name}: ${e.message || e}`, true);
   }
@@ -232,6 +298,7 @@ function build() {
   font-size: 13px; line-height: 1.45; tab-size: 2; }
 #rp :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 #rp-status { min-height: 1.4em; margin: 8px 0; }
+#rp #rp-now { margin: 0 0 10px; color: var(--ink); }
 #rp-status.rp-bad { color: var(--bad); }
 #rp-console { white-space: pre-wrap; font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--muted);
   margin: 0 0 12px; }
@@ -260,13 +327,14 @@ function build() {
 there for any droplet to load). Kept in this browser. How to write them: the guides for
 <a href="https://github.com/charlesvestal/fm1-ripple/blob/main/docs/DROPLETS.md">droplets</a> and
 <a href="https://github.com/charlesvestal/fm1-ripple/blob/main/sdk/README.md">currents</a>.</p>
+<p id="rp-now" aria-live="polite"><b>On the FM-1 now:</b> <span id="rp-now-t">off</span></p>
 <div class="rp-row">
   <label for="rp-kind">Writing</label>
   <select id="rp-kind"><option value="droplet">a droplet (Lua)</option><option value="current">a current (Faust)</option></select>
   <label for="rp-name">named</label>
   <input id="rp-name" size="10" maxlength="8" spellcheck="false" autocomplete="off" value="mine">
   <button type="button" class="rp-go" id="rp-run">Run</button>
-  <button type="button" id="rp-new">Start again</button>
+  <button type="button" id="rp-new">New</button>
   <button type="button" id="rp-stop">Back to the list</button>
 </div>
 <textarea id="rp-code" spellcheck="false" aria-label="The code"></textarea>
@@ -279,13 +347,36 @@ there for any droplet to load). Kept in this browser. How to write them: the gui
 <p id="rp-none">Nothing yet.</p>
 <ul id="rp-files"></ul>`;
   (document.querySelector("main") || document.body).append(sec);
-  $("rp-code").value = DROPLET;
+  const draft = (() => { try { return JSON.parse(localStorage.getItem(KEY + "-draft") || "null"); } catch { return null; } })();
+  $("rp-code").value = draft ? draft.text : DROPLET;
+  if (draft) { $("rp-kind").value = draft.kind; $("rp-name").value = draft.name; }
+  const keep = () => { try { localStorage.setItem(KEY + "-draft", JSON.stringify({ kind: $("rp-kind").value,
+    name: $("rp-name").value, text: $("rp-code").value })); } catch {} };   // what is in the box, kept as you type
+  for (const id of ["rp-code", "rp-name", "rp-kind"]) $(id).addEventListener("input", keep);
   $("rp-kind").addEventListener("change", () => {
     const t = $("rp-code").value;
     if (t === DROPLET || t === CURRENT || !t.trim()) $("rp-code").value = $("rp-kind").value === "droplet" ? DROPLET : CURRENT;
   });
   $("rp-run").addEventListener("click", run);
-  $("rp-new").addEventListener("click", () => { $("rp-code").value = $("rp-kind").value === "droplet" ? DROPLET : CURRENT; });
+  let undo = null;                         // New: the template in the box; for a few seconds, Undo new puts yours back
+  $("rp-new").addEventListener("click", () => {
+    const b = $("rp-new");
+    if (undo) {
+      $("rp-code").value = undo.text;
+      $("rp-name").value = undo.name;
+      clearTimeout(undo.timer);
+      undo = null;
+      b.textContent = "New";
+      keep();
+      return;
+    }
+    undo = { text: $("rp-code").value, name: $("rp-name").value,
+             timer: setTimeout(() => { undo = null; b.textContent = "New"; }, 8000) };
+    $("rp-code").value = $("rp-kind").value === "droplet" ? DROPLET : CURRENT;
+    $("rp-name").value = $("rp-kind").value === "droplet" ? "mine" : "mysound";
+    b.textContent = "Undo new";
+    keep();
+  });
   $("rp-stop").addEventListener("click", () => ready && ask({ what: "stop" }));
   $("rp-code").addEventListener("keydown", (e) => {
     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); run(); }
@@ -323,6 +414,10 @@ export function message(m) {
   else if (m.what === "done") { const res = waiting.get(m.id); waiting.delete(m.id); if (res) res(m); }
   else if (m.what === "state") {
     const c = $("rp-console");
+    running = m.mode === 1 ? m.running : "";
+    const r = m.running.replace(/\.lua$/, "");
+    $("rp-now-t").textContent = m.mode === 1 ? (r === TRY ? "_try, playing your current" : `the droplet ${r}`)
+                              : m.mode === 2 ? "a droplet that stopped on an error (below)" : m.mode === 3 ? "disk mode" : "the list";
     if (m.mode === 2) { c.textContent = m.error + (m.console.length ? "\n" + m.console.join("\n") : ""); say("The droplet stopped: see below.", true); }
     else c.textContent = m.console.join("\n");
   }
