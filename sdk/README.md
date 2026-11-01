@@ -9,10 +9,15 @@ The SDK is MIT-licensed, so currents may use any licence.
 
 ## Build
 
+From Ripple's repository:
+
 ```sh
 sdk/tools/currents.py mysound.dsp --out build/      # build/mysound.cur, for the FM-1
 sdk/tools/currents.py mysound.dsp --host build/     # build/mysound.so, for the simulator
 ```
+
+Copy `mysound.cur` into `currents` on Ripple's disk, in disk mode, and a droplet can load it with
+`current.load("mysound")`.
 
 Building for the FM-1 needs the JieLi toolchain (`JIELI_TOOLCHAIN`, default `~/.jieli/toolchain`) and, on a Mac,
 podman or Docker, as fm1-base does. Faust currents need `faust` on the path.
@@ -42,7 +47,7 @@ process = os.sawtooth(freq) : fi.lowpass(1, 400 + 8000 * (1 - damp))
 Faust code is compiled to C, then built like a C current. A few things are different from Faust on a computer:
 
 - There is no `double`: Faust is run with `-single`.
-- The maths functions are fast approximations (`fastmath.h`), accurate to about 1e-5.
+- The maths functions are fast approximations (`fastmath.h`), close enough for sound, not for science.
 - Memory is limited. Everything a current holds comes from an 84 KB arena that all of a droplet's currents share.
   Long delay lines are the usual problem: 16,000 samples is 64 KB. Faust's table oscillators (`os.osc`) keep a
   65,536-sample table, too big here; use `os.sawtooth`, `os.square`, `os.triangle` or a sine from `ma.PI`.

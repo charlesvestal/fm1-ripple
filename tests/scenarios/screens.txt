@@ -1,0 +1,52 @@
+# The manual's screenshots (tools/gen_screens.sh copies them into docs/img)
+wait 600
+shot list.png
+start awake
+wait 2500
+shot awake.png
+start euclid
+wait 2000
+shot euclid.png
+start chords
+wait 300
+key 7 down
+key 14 down
+wait 300
+shot chords.png
+key 7 up
+key 14 up
+start bells
+wait 5000
+shot bells.png
+start loop
+wait 300
+tap REC
+wait 50
+tapkey 7
+wait 250
+tapkey 11
+wait 250
+tapkey 14
+wait 250
+tapkey 18
+wait 900
+tap REC
+wait 600
+shot loop.png
+start life
+wait 4000
+shot life.png
+start rain
+wait 2000
+shot rain.png
+press HOME
+wait 1200
+release HOME
+turn SELECT 40
+turn SELECT -1
+wait 50
+tap PLAY
+wait 300
+shot disk.png
+tap HOME
+wait 300

@@ -205,7 +205,7 @@ void app_init(void)
 
 /* ---------------------------------------------------------------- the UI --- */
 enum { MODE_LIST, MODE_RUN, MODE_ERROR, MODE_DISK };
-#define NLIST 24
+#define NLIST 48
 static struct {
     uint8_t mode, redraw;
     char names[NLIST][40];               /* the droplets (the disk's, then the built-in ones not replaced), in order */
@@ -240,6 +240,15 @@ static int ends_lua(const char *s)
     return n > 4u && (s[n - 4] == '.') && (s[n - 3] | 32) == 'l' && (s[n - 2] | 32) == 'u' && (s[n - 1] | 32) == 'a';
 }
 
+static int name_cmp(const char *a, const char *b)   /* alphabetical, case aside */
+{
+    for (;; a++, b++) {
+        int x = *a >= 'A' && *a <= 'Z' ? *a + 32 : *a, y = *b >= 'A' && *b <= 'Z' ? *b + 32 : *b;
+        if (x != y || !x)
+            return x - y;
+    }
+}
+
 static void list_scan(void)
 {
     char name[40];
@@ -257,7 +266,7 @@ static void list_scan(void)
             k = ui.n++;
             strcpy(ui.names[k], name);
             ui.mine[k] = v == DISK_VOL;
-            for (j = k; j > 0 && strcmp(ui.names[j - 1], ui.names[j]) > 0; j--) {   /* in order */
+            for (j = k; j > 0 && name_cmp(ui.names[j - 1], ui.names[j]) > 0; j--) {   /* in order */
                 char t[40];
                 uint8_t m = ui.mine[j];
                 strcpy(t, ui.names[j]);

@@ -23,20 +23,22 @@ droplets stay.
 
 The built-in droplets:
 
-- arp: hold keys and they play one after another, in the order PRESET picks; ARP holds them.
-- awake: a melody that wanders a scale on its own. K1 tempo, K2 how far it wanders, K3 how often it rests, K4 the
-  filter; PLAY stops and starts it.
-- beat: a 16-step drum machine. The white keys are the steps, ALGORITHM picks the drum, PLAY starts and stops it.
-- bells: FM bells on loops of 13, 17, 23 and 29 sixteenths, drifting in and out of step, into a reverb.
-- chords: each white key plays a chord of the scale on its note, strummed or together; PRESET picks the kind.
-- drone: three FM voices on a root, its fifth and its octave, slowly changing colour; the keys move the root.
-- euclid: three Euclidean drum tracks (steps, hits, turn), of different lengths if you like.
-- life: Conway's Game of Life, a cell being born playing a plucked note; the keys plant seeds.
-- loop: a note looper. REC records over the loop, PLAY starts and stops it, EDIT clears it.
-- midi: the FM-1 as a USB MIDI controller: notes, four CCs, octaves and the channel; no sound of its own.
-- poly: the keys play a six-voice synth through a delay. K1 to K4 set cutoff, resonance, delay time and feedback;
-  ALGORITHM switches between the saw synth and FM.
-- rain: plucked notes falling on a scale into a reverb, and the keys play along.
+| Droplet | What it is |
+| --- | --- |
+| arp | Hold keys and they play one after another |
+| awake | A melody that wanders a scale on its own |
+| beat | A 16-step drum machine on the white keys |
+| bells | FM bells on loops of different lengths, drifting in and out of step |
+| chords | A chord of the scale on every white key |
+| drone | Three slow FM voices that change colour by themselves |
+| euclid | Three Euclidean drum tracks |
+| life | Conway's Game of Life, a note for each cell born |
+| loop | A note looper |
+| midi | The FM-1 as a USB MIDI controller, no sound of its own |
+| poly | A six-voice synth through a delay |
+| rain | Plucked notes falling on a scale into a reverb |
+
+For their controls, see [the manual](docs/MANUAL.md).
 
 Each keeps its settings when you press SAVE (beat, euclid and loop their patterns too).
 
