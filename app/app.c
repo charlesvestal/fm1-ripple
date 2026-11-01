@@ -199,7 +199,7 @@ void app_init(void)
     crumb_set(0, "boot");
     crumb.in_render = 0;
     plat_code_window(arena + sizeof arena);   /* the currents' code may run in the arena */
-    if (!disk_ok())                      /* a new FM-1, or a disk the computer broke: the shipped one */
+    if (!disk_ok())                      /* a new FM-1, or a disk the computer broke: an empty one */
         disk_format_default();
 }
 
@@ -208,8 +208,10 @@ enum { MODE_LIST, MODE_RUN, MODE_ERROR, MODE_DISK };
 #define NLIST 24
 static struct {
     uint8_t mode, redraw;
-    char names[NLIST][40];               /* the droplets on the disk, then the system's entries */
+    char names[NLIST][40];               /* the droplets (the disk's, then the built-in ones not replaced), in order */
+    uint8_t mine[NLIST];                 /* 1: on the disk, 0: built in */
     int n, sel, top;
+    uint32_t confirm_until;              /* "empty the disk" asked once: a second press within this does it */
     uint32_t keys, btn, home_t;
     char msg[2][24];
     uint32_t msg_until;
@@ -242,17 +244,27 @@ static void list_scan(void)
 {
     char name[40];
     disk_file_t f;
-    int i;
+    int i, v, k, j;
     ui.n = 0;
-    for (i = 0; ui.n < NLIST - 1 && disk_entry("/droplets", i, name, sizeof name, &f); i++)
-        if (!f.dir && ends_lua(name)) {
-            int k = ui.n++, j;
+    for (v = DISK_VOL; v <= BUILTIN_VOL; v++)     /* the disk's first: a built-in one of the same name is replaced */
+        for (i = 0; ui.n < NLIST - 1 && disk_entry(v, "/droplets", i, name, sizeof name, &f); i++) {
+            if (f.dir || !ends_lua(name))
+                continue;
+            for (k = 0; k < ui.n && strcmp(ui.names[k], name); k++)
+                ;
+            if (k < ui.n)
+                continue;
+            k = ui.n++;
             strcpy(ui.names[k], name);
+            ui.mine[k] = v == DISK_VOL;
             for (j = k; j > 0 && strcmp(ui.names[j - 1], ui.names[j]) > 0; j--) {   /* in order */
                 char t[40];
+                uint8_t m = ui.mine[j];
                 strcpy(t, ui.names[j]);
                 strcpy(ui.names[j], ui.names[j - 1]);
                 strcpy(ui.names[j - 1], t);
+                ui.mine[j] = ui.mine[j - 1];
+                ui.mine[j - 1] = m;
             }
         }
     ui.sel = 0;
@@ -328,15 +340,23 @@ static void draw_list(void)
             cv_rect(8, y - 2, 224, 20, scr_pal[4]);
         if (i < ui.n) {
             stem(ui.names[i], t);
-            cv_rect(16, y + 6, 5, 5, on ? scr_pal[15] : scr_pal[7]);
+            if (ui.mine[i])                  /* yours: a filled drop; built in: an outline */
+                cv_rect(16, y + 6, 5, 5, on ? scr_pal[15] : scr_pal[9]);
+            else {
+                cv_rect(16, y + 6, 5, 1, on ? scr_pal[15] : scr_pal[6]);
+                cv_rect(16, y + 10, 5, 1, on ? scr_pal[15] : scr_pal[6]);
+                cv_rect(16, y + 6, 1, 5, on ? scr_pal[15] : scr_pal[6]);
+                cv_rect(20, y + 6, 1, 5, on ? scr_pal[15] : scr_pal[6]);
+            }
             cv_text(30, y, &FONT_S, t, on ? scr_pal[15] : scr_pal[12]);
         } else {
-            cv_text(30, y, &FONT_S, i - ui.n == SYS_DISK ? "disk mode" : "restore the disk",
+            cv_text(30, y, &FONT_S, i - ui.n == SYS_DISK ? "disk mode" :
+                    plat_ms() < ui.confirm_until ? "PLAY again: erase your files" : "empty the disk",
                     on ? scr_pal[15] : scr_pal[8]);
         }
     }
     if (!ui.n)
-        cv_text(30, 60, &FONT_S, "no droplets on the disk", scr_pal[10]);
+        cv_text(30, 60, &FONT_S, "no droplets", scr_pal[10]);
     cv_rect(12, 220, 216, 1, scr_pal[3]);
     used = lr_mem(&peak);
     (void)used;
@@ -494,10 +514,14 @@ static void input(void)
                     start(ui.sel);
                 else if (ui.sel - ui.n == SYS_DISK)
                     disk_mode(1);
-                else {
+                else if (plat_ms() < ui.confirm_until) {   /* asked twice: the disk emptied */
+                    ui.confirm_until = 0;
                     disk_format_default();
                     list_scan();
-                    app_say("DISK", "RESTORED");
+                    app_say("DISK", "EMPTIED");
+                } else {
+                    ui.confirm_until = plat_ms() + 3000u;
+                    ui.redraw = 1;
                 }
             }
         } else if ((ui.mode == MODE_ERROR || ui.mode == MODE_DISK) && (btn & ~ui.btn & (1u << B_HOME))) {
@@ -583,6 +607,10 @@ void app_frame(void)
     input();
     speak();
     ann_tick(plat_ms());
+    if (ui.confirm_until && plat_ms() >= ui.confirm_until) {   /* the question goes away */
+        ui.confirm_until = 0;
+        ui.redraw = 1;
+    }
     if (ui.msg_until && plat_ms() >= ui.msg_until && last_msg != ui.msg_until) {
         last_msg = ui.msg_until;
         ui.redraw = 1;

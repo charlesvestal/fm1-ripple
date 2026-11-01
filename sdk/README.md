@@ -2,7 +2,8 @@
 
 A current is a piece of sound: a voice, a drum kit, a filter or a delay. Droplets load currents from the
 `currents` folder on Ripple's disk. You write a current in Faust or in C, build it into a `.cur` file on the
-computer, and copy that file onto the disk in disk mode. Nothing on the FM-1 needs updating.
+computer, and copy that file onto the disk in disk mode. Nothing on the FM-1 needs updating. A current on the disk
+with the same name as a built-in one (`voice`, `delay`, `drums`, `fm`, `pluck`, `plate`) is used instead of it.
 
 The SDK is MIT-licensed, so currents may use any licence.
 

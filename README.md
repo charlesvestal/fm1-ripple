@@ -8,14 +8,20 @@ Inspired by monome's norns: Lua scripts over compiled sound engines.
 
 ## On the FM-1
 
-The list shows the droplets on the disk. Turn SELECT (or press OCT- / OCT+) to pick one and press PLAY to start it.
-Hold HOME for a second to go back to the list.
+The list shows the droplets: the ones built into Ripple (an outlined mark) and yours on the disk (a filled one).
+Turn SELECT (or press OCT- / OCT+) to pick one and press PLAY to start it. Hold HOME for a second to go back to the
+list.
 
 At the end of the list, **disk mode** shows the disk to a computer as a drive called RIPPLE, with the folders
-`droplets` and `currents`. Eject the drive when you're done, and Ripple comes back to the list. **Restore the disk**
-puts the shipped droplets and currents back, and erases everything else on the disk.
+`droplets`, `currents`, `data` and `lib`. Eject the drive when you're done, and Ripple comes back to the list. The
+whole disk (276 KB) is yours: the built-in droplets and currents live in the firmware, not on it. A droplet or a
+current on the disk with the same name as a built-in one is used instead of it, so to change a built-in droplet,
+copy it from `builtin/droplets` in this repository onto the disk and edit it there.
 
-The shipped droplets:
+**Empty the disk** (press PLAY twice) erases everything on the disk and leaves the empty folders. The built-in
+droplets stay.
+
+The built-in droplets:
 
 - awake: a melody that wanders a scale on its own. K1 tempo, K2 how far it wanders, K3 how often it rests, K4 the
   filter; PLAY stops and starts it.
@@ -39,8 +45,8 @@ export PATH=~/github/fm1-parent/bin:$PATH        # bin/docker runs podman
 python3 base/tools/fm1_install.py app/build/ripple.fwsc --yes
 ```
 
-`build.sh` builds the currents (`currents/`), puts them and `disk/` into the shipped disk image, then builds the
-firmware with fm1-base (`base/`).
+`build.sh` builds the currents (`currents/`), puts them and the droplets (`builtin/`) into the built-in volume, then
+builds the firmware with fm1-base (`base/`). `disk/` is the empty disk a new FM-1 starts with.
 
 ## Licences
 

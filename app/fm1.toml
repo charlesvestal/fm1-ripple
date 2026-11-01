@@ -16,7 +16,8 @@ o2 = ["lua/lua_one.c"]         # Lua and the droplet API, its own unit (o2_cflag
 o2_cflags = ["-Os"]
 asm = ["lua/lj.S"]             # Lua's errors: setjmp / longjmp
 vendored = ["third_party/"]
-gen = ["../tools/mkdisk.py build/disk --header {gen}/disk_image.h"]   # the shipped disk: disk/ and the built currents (build.sh)
+gen = ["../tools/mkdisk.py ../disk --header {gen}/disk_image.h",        # the empty disk: disk/ (its folders)
+       "../tools/mkdisk.py build/builtin --builtin {gen}/builtin_image.h"] # built in: builtin/ and the currents (build.sh)
 # the site
 tagline = "Droplets and currents for the FM-1"
 repo = "https://github.com/charlesvestal/fm1-ripple"

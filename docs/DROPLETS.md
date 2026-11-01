@@ -7,8 +7,12 @@ together.
 To add a droplet, put Ripple in disk mode, copy the `.lua` file into `droplets`, then eject the drive. It appears in
 the list. Hold HOME for a second to leave a droplet.
 
+Ripple also has droplets and currents built in. They aren't on the disk, but droplets on the disk can use the
+built-in currents, and a file on the disk with the same name as a built-in one is used instead of it. The built-in
+droplets are in `builtin/droplets` in Ripple's repository: copy one onto the disk to start from it.
+
 Ripple runs Lua 5.4 with 32-bit integers and 32-bit floats. There is no `io`, `os` or `debug` library. `require`
-finds modules in `lib` and `droplets` on the disk.
+finds modules in `lib` and `droplets`, on the disk or built in.
 
 ## A small droplet
 
@@ -52,7 +56,8 @@ HOME is passed to the droplet too, but holding it for a second always goes back 
 
 ## Currents
 
-`current.load(name)` loads `currents/NAME.cur` from the disk and returns the current.
+`current.load(name)` loads `currents/NAME.cur` from the disk, or the built-in current of that name, and returns the
+current.
 
 | Call | What it does |
 |---|---|
@@ -65,7 +70,7 @@ HOME is passed to the droplet too, but holding it for a second always goes back 
 works on everything before it. So `flow.set(drums, bass, delay)` puts the delay over both. `flow.level(v)` sets
 the droplet's volume (0 to 1, default 0.5), and `flow.peak()` gives the last block's loudest sample.
 
-The currents on the shipped disk:
+The built-in currents:
 
 | Current | Parameters |
 |---|---|

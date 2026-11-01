@@ -1,16 +1,24 @@
 /* SPDX-License-Identifier: MPL-2.0
  * Copyright (C) 2026 Charles Vestal */
-/* The disk (disk.h): FAT12 read in place from the data flash. The geometry comes from the boot sector, so a volume
- * the computer formatted again still reads. Long names (VFAT) are read; writes come only from disk mode (msc.c) and
- * from disk_format_default. Part of the unity build (app.c). */
+/* The disk (disk.h): FAT12 read in place from the data flash, and beside it the built-in volume, the same format
+ * read from the firmware's own image (read-only: the shipped droplets and currents). A path looks on the disk
+ * first, then built in. The geometry comes from each boot sector, so a disk the computer formatted again still
+ * reads. Long names (VFAT) are read; the disk is written by disk mode (msc.c), a droplet's data
+ * (disk_write_file) and disk_format_default. Part of the unity build (app.c). */
 #include "disk.h"
-#include "disk_image.h"                     /* the shipped volume (tools/mkdisk.py) */
+#include "disk_image.h"                     /* the empty disk (tools/mkdisk.py) */
+#include "builtin_image.h"                  /* the built-in volume (tools/mkdisk.py --builtin) */
 
-static struct {
+typedef struct {
     uint32_t fat_lba, root_lba, root_n, data_lba, nclusters, spc;   /* in sectors; spc: sectors a cluster */
     uint32_t nfat, spf;                     /* the FATs: how many, sectors each */
-    uint8_t ok;
-} dk;
+    uint32_t sectors;                       /* the volume's size */
+    uint8_t ok, id;                         /* id: DISK_VOL or BUILTIN_VOL */
+} vol_t;
+static vol_t vols[2] = {{0, 0, 0, 0, 0, 0, 0, 0, DISK_SECTORS, 0, DISK_VOL},
+                        {0, 0, 0, 0, 0, 0, 0, 0, BUILTIN_SECTORS, 0, BUILTIN_VOL}};
+static vol_t *dv = &vols[DISK_VOL];         /* the volume being read */
+#define dk (*dv)
 
 /* writes (disk mode's, a droplet's file) go through one 4 KB flash sector held in RAM: what reads it sees it */
 static uint8_t blk[4096] PLAT_POOL;
@@ -27,12 +35,22 @@ const uint8_t *disk_sector(uint32_t lba)
     return plat_data(DISK_LO + off);
 }
 
+/* sector lba of the volume being read */
+static const uint8_t *vol_sector(uint32_t lba)
+{
+    if (dv->id == DISK_VOL)
+        return disk_sector(lba);
+    return lba < BUILTIN_SECTORS ? BUILTIN_IMAGE + lba * 512u : 0;
+}
+
 static uint16_t rd16(const uint8_t *p) { return (uint16_t)(p[0] | p[1] << 8); }
 static uint32_t rd32(const uint8_t *p) { return (uint32_t)(p[0] | p[1] << 8 | p[2] << 16 | (uint32_t)p[3] << 24); }
 
-static void disk_mount(void)
+static void vol_mount(vol_t *v)
 {
-    const uint8_t *b = disk_sector(0);
+    const uint8_t *b;
+    dv = v;
+    b = vol_sector(0);
     uint32_t bps, rsv, nfat, nroot, tot, spf;
     dk.ok = 0;
     if (!b || b[510] != 0x55 || b[511] != 0xAA)
@@ -44,7 +62,7 @@ static void disk_mount(void)
     nroot = rd16(b + 17);
     tot = rd16(b + 19) ? rd16(b + 19) : rd32(b + 32);
     spf = rd16(b + 22);
-    if (bps != 512u || !dk.spc || !nfat || !spf || tot > DISK_SECTORS)
+    if (bps != 512u || !dk.spc || !nfat || !spf || tot > dk.sectors)
         return;
     dk.nfat = nfat;
     dk.spf = spf;
@@ -60,16 +78,22 @@ static void disk_mount(void)
     dk.ok = 1;
 }
 
+static void disk_mount(void)
+{
+    vol_mount(&vols[BUILTIN_VOL]);
+    vol_mount(&vols[DISK_VOL]);
+}
+
 int disk_ok(void)
 {
     disk_mount();
-    return dk.ok;
+    return vols[DISK_VOL].ok;
 }
 
 static uint32_t fat_next(uint32_t c)
 {
     uint32_t off = c + c / 2u, v;
-    const uint8_t *s0 = disk_sector(dk.fat_lba + off / 512u), *s1 = disk_sector(dk.fat_lba + (off + 1u) / 512u);
+    const uint8_t *s0 = vol_sector(dk.fat_lba + off / 512u), *s1 = vol_sector(dk.fat_lba + (off + 1u) / 512u);
     if (!s0 || !s1)
         return 0xFFFu;
     v = s0[off % 512u] | (uint32_t)s1[(off + 1u) % 512u] << 8;
@@ -96,13 +120,15 @@ static uint32_t chain_lba(uint32_t cluster, uint32_t k)
 static const uint8_t *chain_sector(uint32_t cluster, uint32_t k)
 {
     uint32_t lba = chain_lba(cluster, k);
-    return lba ? disk_sector(lba) : 0;
+    return lba ? vol_sector(lba) : 0;
 }
 
 uint32_t disk_read(const disk_file_t *f, uint32_t off, void *dst, uint32_t n)
 {
     uint8_t *o = dst;
-    uint32_t got = 0, cluster = f->cluster, cl_bytes = dk.spc * 512u, ci = 0;
+    uint32_t got = 0, cluster = f->cluster, cl_bytes, ci = 0;
+    dv = &vols[f->vol & 1u];
+    cl_bytes = dk.spc * 512u;
     if (!dk.ok || off >= f->size)
         return 0;
     if (n > f->size - off)
@@ -119,7 +145,7 @@ uint32_t disk_read(const disk_file_t *f, uint32_t off, void *dst, uint32_t n)
         if (!cl_ok(cluster))
             return got;
         in = at % cl_bytes;
-        s = disk_sector(dk.data_lba + (cluster - 2u) * dk.spc + in / 512u);
+        s = vol_sector(dk.data_lba + (cluster - 2u) * dk.spc + in / 512u);
         if (!s)
             return got;
         k = 512u - in % 512u;
@@ -231,14 +257,15 @@ static void entry_file(const uint8_t *e, disk_file_t *f)
     f->size = f->dir ? 0 : rd32(e + 28);
 }
 
-int disk_open(const char *path, disk_file_t *f)
+static int vol_open(vol_t *v, const char *path, disk_file_t *f)
 {
-    disk_mount();
+    dv = v;
     if (!dk.ok)
         return -1;
     f->cluster = 0;
     f->dir = 1;
     f->size = 0;
+    f->vol = dk.id;
     while (*path) {
         find_t ft;
         int n = 0;
@@ -262,6 +289,14 @@ int disk_open(const char *path, disk_file_t *f)
     return 0;
 }
 
+int disk_open(const char *path, disk_file_t *f)
+{
+    disk_mount();
+    if (vol_open(&vols[DISK_VOL], path, f) == 0)
+        return 0;
+    return vol_open(&vols[BUILTIN_VOL], path, f);
+}
+
 typedef struct {
     int want, at;
     char *name;
@@ -282,12 +317,15 @@ static int nth_fn(const char *name, const uint8_t *e, void *arg)
     return 1;
 }
 
-int disk_entry(const char *path, int i, char *name, int max, disk_file_t *f)
+int disk_entry(int vol, const char *path, int i, char *name, int max, disk_file_t *f)
 {
     disk_file_t d;
     nth_t t;
-    if (disk_open(path, &d) != 0 || !d.dir)
+    disk_mount();
+    if (vol_open(&vols[vol & 1], path, &d) != 0 || !d.dir)
         return 0;
+    if (f)
+        f->vol = (uint8_t)(vol & 1);
     t.want = i;
     t.at = 0;
     t.name = name;
@@ -362,7 +400,8 @@ static int disk_write_file(const char *dir, const char *name83, const void *data
     int found = 0;
     const uint8_t *s;
     uint8_t sec[512];
-    if (disk_open(dir, &d) != 0 || !d.dir)
+    disk_mount();
+    if (vol_open(&vols[DISK_VOL], dir, &d) != 0 || !d.dir)
         return -1;
     for (k = 0; !found; k++) {              /* its entry, or the first free one */
         uint32_t lba = chain_lba(d.cluster, k);
