@@ -3,9 +3,187 @@ wait 600
 data app/build/scenarios/selftest/selftest.img 0x97000
 reboot
 wait 600
-expect droplets 13
+expect droplets 17
 start selftest
 wait 300
 expect error 0
 expect mode 1
 shot error.png
+press HOME
+wait 1200
+release HOME
+wait 100
+# the MIDI effects (tests/disk/droplets/fxtest.lua): what each plays, out over USB. Key 7 is C4 (3C), key 11 E4 (40)
+start fxtest
+wait 300
+expect error 0
+out
+# nothing on: the note as played
+tapkey 7 100
+wait 100
+expect_out USB 90 3C 64
+expect_no_out USB 90 43 64
+out
+# chord: a fifth above
+tap EDIT
+tapkey 7 100
+wait 100
+expect_out USB 90 3C 64
+expect_out USB 90 43 64
+out
+# note offset: an octave up, and not the note played
+tap FX
+tapkey 7 100
+wait 100
+expect_out USB 90 48 64
+expect_no_out USB 90 3C 64
+out
+# scale (C major): C#4 (key 8) comes out a scale note, not C#
+tap GLO
+tapkey 8 100
+wait 100
+expect_no_out USB 90 3D 64
+out
+# arp: two keys held step in turn, again and again
+tap ENV
+key 7 down 100
+key 11 down 100
+wait 700
+key 7 up
+key 11 up
+wait 100
+expect_out USB 90 3C 64
+expect_out USB 90 40 64
+out
+# echo: the note, then its repeats later and quieter
+tap LFO
+tapkey 7 100
+wait 50
+expect_out USB 90 3C 64
+out
+wait 700
+expect_no_out USB 90 3C 64
+out
+# loop, repeat 1/2 beat (250 ms at 120): notes up to SEQ, then the last whole half beat before it repeats, on the
+# grid, while SEQ is held; live notes meanwhile are not heard; let go, nothing more
+tap SEL
+tapkey 7 100
+wait 110
+tapkey 9 100
+wait 110
+tapkey 11 100
+wait 110
+tapkey 12 100
+wait 110
+tapkey 7 100
+wait 110
+tapkey 9 100
+wait 110
+tapkey 11 100
+wait 110
+tapkey 12 100
+wait 110
+tapkey 7 100
+wait 110
+tapkey 9 100
+wait 110
+tapkey 11 100
+wait 110
+tapkey 12 100
+wait 110
+tapkey 7 100
+wait 110
+tapkey 9 100
+wait 110
+tapkey 11 100
+wait 110
+tapkey 12 100
+wait 110
+out
+press SEQ
+tapkey 16 100
+wait 1000
+expect_out USB 90 41 64
+expect_no_out USB 90 47 64
+out
+release SEQ
+wait 50
+out
+wait 500
+expect_no_out USB 90 3C 64
+expect_no_out USB 90 47 64
+out
+# loop, remix reversed: the last whole bar (2 s), back as 16 slices in reverse while SEQ is held
+tap ARP
+tapkey 7 100
+wait 110
+tapkey 9 100
+wait 110
+tapkey 11 100
+wait 110
+tapkey 12 100
+wait 110
+tapkey 7 100
+wait 110
+tapkey 9 100
+wait 110
+tapkey 11 100
+wait 110
+tapkey 12 100
+wait 110
+tapkey 7 100
+wait 110
+tapkey 9 100
+wait 110
+tapkey 11 100
+wait 110
+tapkey 12 100
+wait 110
+tapkey 7 100
+wait 110
+tapkey 9 100
+wait 110
+tapkey 11 100
+wait 110
+tapkey 12 100
+wait 110
+tapkey 7 100
+wait 110
+tapkey 9 100
+wait 110
+tapkey 11 100
+wait 110
+tapkey 12 100
+wait 110
+tapkey 7 100
+wait 110
+tapkey 9 100
+wait 110
+tapkey 11 100
+wait 110
+tapkey 12 100
+wait 110
+tapkey 7 100
+wait 110
+tapkey 9 100
+wait 110
+tapkey 11 100
+wait 110
+tapkey 12 100
+wait 110
+tapkey 7 100
+wait 110
+tapkey 9 100
+wait 110
+tapkey 11 100
+wait 110
+tapkey 12 100
+wait 110
+out
+press SEQ
+wait 2100
+release SEQ
+expect_out USB 90 40 64
+expect_out USB 90 3C 64
+out
+expect error 0

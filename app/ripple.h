@@ -38,7 +38,31 @@ void rp_set(int h, int p, float v);
 void rp_note(int h, int note, float vel);
 void rp_route(const int *hs, int n);
 void rp_level(float v);
+void rp_clear(void);                        /* every current gone (the droplet loads others); handles stale */
+uint32_t rp_gen(void);                      /* rp_clear's count: a handle from another is stale */
+int rp_fits(const char *name);              /* 1: the current would load now */
+uint32_t rp_room(void);                     /* bytes left for currents */
+int rp_info(const char *name, int *kind, int *voices, uint32_t *code, uint32_t *state);   /* 0, or -1 none;
+                                             * kind 0 makes sound, 1 processes the bus, -1 not said */
+int rp_currents(void);                      /* the currents there are (rp_current_name 0..n-1) */
+const char *rp_current_name(int i);
 float rp_peak(void);
+
+/* MIDI effects (fx.c): an instance (rp_fx_new: its number, -1 none left), its parameters by number (rp_fx_param:
+ * a name's, -1 none) */
+int rp_fx_new(void);
+int rp_fx_param(const char *name);
+int rp_fx_nparams(void);
+const char *rp_fx_param_info(int k, int *min, int *max, int *def);
+void rp_fx_set(int i, int k, int v);
+int rp_fx_get(int i, int k);
+void rp_fx_format(int k, int v, char *out, int n);   /* the value as text ("1/16", "+7", "on") */
+void rp_fx_midi(int i, int b0, int b1, int b2);     /* a message into it (a note, the clock) */
+void rp_fx_connect(int i, int h);                   /* what it plays goes to current h (-1: nowhere) */
+void rp_fx_midi_out(int i, int on);                 /* and to MIDI out */
+void rp_fx_loop(int i, int on);                     /* the loop / beat repeat held */
+void rp_fx_panic(int i);
+int rp_fx_bpm10(int i);
 
 /* the panel and MIDI */
 void rp_midi(int b0, int b1, int b2);
@@ -47,6 +71,9 @@ void rp_led_button(int b, int on);
 int rp_button_index(const char *name);      /* "PLAY" -> B_PLAY, -1 none */
 const char *rp_button_name(int b);
 uint32_t rp_ms(void);
+int rp_cpu(void);                           /* the render's share of the first core, % */
+int rp_cores(void);                         /* 2 while the second core takes part of the render, else 1 */
+int rp_pressure(int k);                     /* a held key's pressure, 0..127 (0 for the top row: no reading) */
 int rp_data_write(const char *s, size_t n);  /* the droplet's file (/data/NAME.DAT): 0 = written */
 int rp_data_read(char *d, size_t max);       /* its bytes (at most max), or -1 none */
 void rp_print(const char *s, size_t n);     /* print: the console */
@@ -60,6 +87,6 @@ const char *lr_error(void);                 /* the last error's text */
 void lr_key(int k, int vel);                /* key k (0 = F3) pressed with vel 1..127, or released (0) */
 void lr_button(int b, int z);
 void lr_enc(int n, int d);                  /* n 1..4: K1..K4; 5 SELECT, 6 ALGORITHM, 7 PRESET */
-void lr_midi(int b0, int b1, int b2);
+void lr_midi(int b0, int b1, int b2, const char *port);   /* port: "usb", "trs" */
 void lr_tick(uint32_t ms);                  /* the clocks, and frame() at ~30 fps */
 uint32_t lr_mem(uint32_t *peak);            /* the heap: bytes in use (and the most) */

@@ -42,8 +42,11 @@ The built-in droplets:
 | life | Conway's Game of Life, a note for each cell born |
 | loop | A note looper |
 | midi | The FM-1 as a USB MIDI controller, no sound of its own |
+| monk | A singing voice (MonkSynth, as MONK-1 has it): lean on a key to open the vowel |
 | poly | A six-voice synth through a delay |
+| rack | Build an instrument on the FM-1: MIDI effects (chords, arp, echo, feel, loop and beat stretch) into any voice, then two effects |
 | rain | Plucked notes falling on a scale into a reverb |
+| sophie | Sixteen pads of metallic FM percussion (Sophie, as SPH-16 has it) with a 16-step pattern |
 
 For their controls, see [the manual](app/docs/MANUAL.md).
 
@@ -68,7 +71,8 @@ builds the firmware with fm1-base (`base/`). `disk/` is the empty disk a new FM-
 ## Licences
 
 Ripple is MPL-2.0, on fm1-base and felucca-bsp (from Felucca by Leo Kuroshita, Hügelton Instruments). The SDK
-(`sdk/`), the built-in currents and droplets are MIT. Lua 5.4 is MIT (Lua.org, PUC-Rio), with the changes listed in
+(`sdk/`), the built-in currents and droplets are MIT: `sophie` from Sophie by Matt Estela and the digisophie
+contributors, `monk` from MonkSynth by Jonathan Taylor. The MIDI effects are e16-launcher's engine (MIT). Lua 5.4 is MIT (Lua.org, PUC-Rio), with the changes listed in
 `app/third_party/lua-5.4.7/PATCHES.md`. Currents are written in Faust (GRAME); the code Faust generates is the
 current's own. For details, see [LICENSING.md](LICENSING.md).
 

@@ -2,7 +2,7 @@
 #   ./build.sh --host, then app/build/host/ripple_host tests/scenarios/droplets.txt OUTDIR
 wait 800
 expect mode 0
-expect droplets 12
+expect droplets 15
 shot list.png
 # awake
 start awake
@@ -75,6 +75,130 @@ wait 1200
 release HOME
 wait 100
 expect mode 0
+# sophie: sixteen pads in two parts (one for each core), through the plate; its pattern, every pad edited
+start sophie
+wait 600
+expect error 0
+expect mode 1
+expect currents 2
+expect state_kb >39
+wav sophie.wav
+tap PLAY
+wait 2500
+expect peak_db_min -40
+expect c2_blocks >100
+tapkey 13 120
+tapkey 14 90
+wait 400
+wavstop
+turn K2 20
+tap ENV
+turn K3 -30
+turn ALGO 1
+tap SEQ
+tapkey w3
+tap GLO
+turn K4 10
+tap SAVE
+wait 300
+expect error 0
+expect peak_kb <100
+shot sophie.png
+press HOME
+wait 1200
+release HOME
+wait 100
+expect mode 0
+# monk: one voice that sings, its unison in two parts, leaning on a key opens the vowel; through the delay
+start monk
+wait 600
+expect error 0
+expect mode 1
+expect currents 2
+wav monk.wav
+key 12 down 100 0
+wait 500
+key 12 down 100 90
+wait 600
+key 16 down 70 40
+wait 500
+key 16 up
+key 12 up
+wait 800
+wavstop
+expect peak_db_min -40
+tap GLO
+turn K1 2
+key 9 down 110 0
+wait 600
+shot monk.png
+key 9 up
+tap SAVE
+wait 300
+expect error 0
+expect arena_kb <84
+press HOME
+wait 1200
+release HOME
+wait 100
+expect mode 0
+# rack: the keys through the MIDI effects (a chord) into a voice, then the delay and the plate; another voice and no
+# second effect; the arp; MIDI in from the jack; the loop held; SAVE
+start rack
+wait 600
+expect error 0
+expect mode 1
+expect currents 3
+tap ARP
+wav rack.wav
+key 9 down
+wait 500
+key 9 up
+wait 400
+expect peak_db_min -40
+shot rack_chord.png
+tap EDIT
+turn ALGO 1
+wait 200
+expect error 0
+expect currents 3
+peakreset
+key 12 down
+wait 400
+key 12 up
+wait 300
+expect peak_db_min -40
+tap GLO
+turn ALGO -2
+wait 200
+expect currents 2
+tap ARP
+turn SELECT 1
+tap ARP
+key 7 down
+key 11 down
+wait 800
+key 7 up
+key 11 up
+peakreset
+midi TRS 90 3C 64
+wait 300
+midi TRS 80 3C 00
+wait 200
+expect peak_db_min -40
+press SEQ
+wait 600
+release SEQ
+wavstop
+tap SAVE
+wait 300
+expect error 0
+shot rack.png
+press HOME
+wait 1200
+release HOME
+wait 100
+expect mode 0
 # rain: plucks into the reverb, by itself; SAVE keeps its knobs (data/RAIN.DAT)
 start rain
 wait 400
@@ -105,4 +229,4 @@ shot disk.png
 tap HOME
 wait 200
 expect mode 0
-expect droplets 12
+expect droplets 15

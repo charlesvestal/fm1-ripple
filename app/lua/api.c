@@ -62,8 +62,11 @@ static int cur_h(lua_State *L, int i)
     int h;
     luaL_checktype(L, i, LUA_TTABLE);
     lua_getfield(L, i, "_h");
-    h = (int)luaL_checkinteger(L, -1);
-    lua_pop(L, 1);
+    lua_getfield(L, i, "_g");
+    h = (int)luaL_checkinteger(L, -2);
+    if ((uint32_t)luaL_checkinteger(L, -1) != rp_gen())
+        luaL_error(L, "current %s: gone (flow.clear)", rp_name(h));
+    lua_pop(L, 2);
     return h;
 }
 static int c_load(lua_State *L)
@@ -72,9 +75,11 @@ static int c_load(lua_State *L)
     int h = rp_load(name, &err);
     if (h < 0)
         return luaL_error(L, "current %s: %s", name, err ? err : "failed");
-    lua_createtable(L, 0, 4);
+    lua_createtable(L, 0, 5);
     lua_pushinteger(L, h);
     lua_setfield(L, -2, "_h");
+    lua_pushinteger(L, (lua_Integer)rp_gen());
+    lua_setfield(L, -2, "_g");
     lua_pushstring(L, rp_name(h));
     lua_setfield(L, -2, "name");
     lua_pushinteger(L, rp_voices(h));
@@ -124,6 +129,32 @@ static int c_params(lua_State *L)
     }
     return 1;
 }
+/* current.list(): {name, kind = "voice" | "effect" | "sound" | "?", voices, kb (code and state)} each */
+static int c_list(lua_State *L)
+{
+    int n = rp_currents(), i;
+    lua_createtable(L, n, 0);
+    for (i = 0; i < n; i++) {
+        int kind = -1, voices = 0;
+        uint32_t code = 0, state = 0;
+        const char *nm = rp_current_name(i);
+        rp_info(nm, &kind, &voices, &code, &state);
+        lua_createtable(L, 0, 4);
+        lua_pushstring(L, nm);
+        lua_setfield(L, -2, "name");
+        lua_pushstring(L, kind < 0 ? "?" : kind ? "effect" : voices ? "voice" : "sound");
+        lua_setfield(L, -2, "kind");
+        lua_pushinteger(L, voices);
+        lua_setfield(L, -2, "voices");
+        lua_pushinteger(L, (lua_Integer)((code + state + 1023u) / 1024u));
+        lua_setfield(L, -2, "kb");
+        lua_rawseti(L, -2, i + 1);
+    }
+    return 1;
+}
+static int c_fits(lua_State *L) { lua_pushboolean(L, rp_fits(luaL_checkstring(L, 1))); return 1; }
+static int c_room(lua_State *L) { lua_pushinteger(L, (lua_Integer)(rp_room() / 1024u)); return 1; }
+static int f_clear(lua_State *L) { (void)L; rp_clear(); return 0; }
 static const luaL_Reg CURRENT_M[] = {{"set", c_set}, {"note", c_note}, {"params", c_params}, {NULL, NULL}};
 
 static int f_set(lua_State *L)
@@ -138,7 +169,108 @@ static int f_set(lua_State *L)
 }
 static int f_level(lua_State *L) { rp_level((float)luaL_checknumber(L, 1)); return 0; }
 static int f_peak(lua_State *L) { lua_pushnumber(L, rp_peak()); return 1; }
-static const luaL_Reg FLOW[] = {{"set", f_set}, {"level", f_level}, {"peak", f_peak}, {NULL, NULL}};
+static const luaL_Reg FLOW[] = {{"set", f_set}, {"level", f_level}, {"peak", f_peak}, {"clear", f_clear}, {NULL, NULL}};
+
+/* -------------------------------------------------------- MIDI effects --- */
+#define FX_MT "ripple.midifx"
+static int fx_i(lua_State *L) { return *(int *)luaL_checkudata(L, 1, FX_MT); }
+static int fx_k(lua_State *L, int at)       /* a parameter by name or number (1-based) */
+{
+    int k;
+    if (lua_type(L, at) == LUA_TNUMBER)
+        return (int)lua_tointeger(L, at) - 1;
+    if ((k = rp_fx_param(luaL_checkstring(L, at))) < 0)
+        luaL_error(L, "midifx has no parameter %s", lua_tostring(L, at));
+    return k;
+}
+static int x_new(lua_State *L)
+{
+    int i = rp_fx_new();
+    if (i < 0)
+        return luaL_error(L, "midifx: two at most");
+    *(int *)lua_newuserdatauv(L, sizeof(int), 0) = i;
+    luaL_setmetatable(L, FX_MT);
+    return 1;
+}
+static int x_set(lua_State *L)
+{
+    int i = fx_i(L), k = fx_k(L, 2), v, mn, mx, df;
+    rp_fx_param_info(k, &mn, &mx, &df);
+    if (lua_type(L, 3) == LUA_TSTRING) {    /* by what it shows: "1/16", "up", "on" */
+        const char *want = lua_tostring(L, 3);
+        char t[16];
+        for (v = mn; v <= mx; v++) {
+            rp_fx_format(k, v, t, sizeof t);
+            if (!strcmp(t, want))
+                break;
+        }
+        if (v > mx)
+            return luaL_error(L, "midifx %s: no value %s", lua_tostring(L, 2), want);
+    } else if (lua_isboolean(L, 3))
+        v = lua_toboolean(L, 3);
+    else
+        v = (int)lp_floor((float)luaL_checknumber(L, 3) + 0.5f);
+    rp_fx_set(i, k, v);
+    return 0;
+}
+static int x_get(lua_State *L) { lua_pushinteger(L, rp_fx_get(fx_i(L), fx_k(L, 2))); return 1; }
+static int x_text(lua_State *L)             /* fx:text(name [, v]): the value (now, or v) as it shows */
+{
+    int i = fx_i(L), k = fx_k(L, 2);
+    char t[16];
+    rp_fx_format(k, (int)luaL_optinteger(L, 3, rp_fx_get(i, k)), t, sizeof t);
+    lua_pushstring(L, t);
+    return 1;
+}
+static int x_note(lua_State *L)
+{
+    int i = fx_i(L), n = (int)luaL_checkinteger(L, 2) & 127, ch = (int)luaL_optinteger(L, 4, 1) - 1;
+    float vel = (float)luaL_optnumber(L, 3, 1.0);
+    int v = (int)(vel * 127.0f + 0.5f);
+    if (v > 127) v = 127;
+    rp_fx_midi(i, (v > 0 ? 0x90 : 0x80) | (ch & 15), n, v > 0 ? v : 0);
+    return 0;
+}
+static int x_midi(lua_State *L)
+{
+    rp_fx_midi(fx_i(L), (int)luaL_checkinteger(L, 2), (int)luaL_optinteger(L, 3, 0), (int)luaL_optinteger(L, 4, 0));
+    return 0;
+}
+static int x_connect(lua_State *L)
+{
+    int i = fx_i(L);
+    rp_fx_connect(i, lua_isnoneornil(L, 2) ? -1 : cur_h(L, 2));
+    return 0;
+}
+static int x_midi_out(lua_State *L) { rp_fx_midi_out(fx_i(L), lua_toboolean(L, 2)); return 0; }
+static int x_loop(lua_State *L) { rp_fx_loop(fx_i(L), lua_toboolean(L, 2)); return 0; }
+static int x_panic(lua_State *L) { rp_fx_panic(fx_i(L)); return 0; }
+static int x_tempo(lua_State *L) { lua_pushnumber(L, (lua_Number)rp_fx_bpm10(fx_i(L)) / 10); return 1; }
+static int x_params(lua_State *L)           /* {name, min, max, default} each, in order */
+{
+    int n = rp_fx_nparams(), k;
+    (void)fx_i(L);
+    lua_createtable(L, n, 0);
+    for (k = 0; k < n; k++) {
+        int mn, mx, df;
+        const char *nm = rp_fx_param_info(k, &mn, &mx, &df);
+        lua_createtable(L, 0, 4);
+        lua_pushstring(L, nm);
+        lua_setfield(L, -2, "name");
+        lua_pushinteger(L, mn);
+        lua_setfield(L, -2, "min");
+        lua_pushinteger(L, mx);
+        lua_setfield(L, -2, "max");
+        lua_pushinteger(L, df);
+        lua_setfield(L, -2, "default");
+        lua_rawseti(L, -2, k + 1);
+    }
+    return 1;
+}
+static const luaL_Reg FX_M[] = {{"set", x_set}, {"get", x_get}, {"text", x_text}, {"note", x_note},
+                                {"midi", x_midi}, {"connect", x_connect}, {"midi_out", x_midi_out},
+                                {"loop", x_loop}, {"panic", x_panic}, {"tempo", x_tempo}, {"params", x_params},
+                                {NULL, NULL}};
 
 /* ---------------------------------------------------------- panel, MIDI --- */
 static int m_send(lua_State *L)
@@ -172,6 +304,9 @@ static int d_read(lua_State *L)
     return 1;
 }
 static int u_ms(lua_State *L) { lua_pushinteger(L, (lua_Integer)(rp_ms() & 0x7FFFFFFFu)); return 1; }
+static int u_cpu(lua_State *L) { lua_pushinteger(L, rp_cpu()); return 1; }
+static int u_cores(lua_State *L) { lua_pushinteger(L, rp_cores()); return 1; }
+static int t_pressure(lua_State *L) { lua_pushinteger(L, rp_pressure((int)luaL_checkinteger(L, 1))); return 1; }
 static int u_note(lua_State *L) { lua_pushinteger(L, 53 + luaL_checkinteger(L, 1)); return 1; }
 
 /* the clocks: coroutines woken by _tick (every millisecond the main loop passes) */
@@ -208,25 +343,27 @@ static const char PRELUDE[] =
     "  for i = 1, n do local id = due_list[i]; due_list[i] = nil; local j = jobs[id]; if j then step(id, j) end end\n"
     "end\n"
     "data = {}\n"
-    "local function ser(v, out, d)\n"
+    /* a value as Lua source: a table's sequence without its keys, each table joined as it is done (the memory
+     * stays small: a kit of a few hundred numbers is a few hundred short strings at a time, not thousands) */
+    "local function ser(v, d)\n"
     "  local t = type(v)\n"
-    "  if t == 'number' or t == 'boolean' then out[#out + 1] = tostring(v)\n"
-    "  elseif t == 'string' then out[#out + 1] = string.format('%q', v)\n"
+    "  if t == 'number' or t == 'boolean' then return tostring(v)\n"
+    "  elseif t == 'string' then return string.format('%q', v)\n"
     "  elseif t == 'table' and d < 8 then\n"
-    "    out[#out + 1] = '{'\n"
+    "    local out, n = {}, #v\n"
+    "    for i = 1, n do out[i] = ser(v[i], d + 1) end\n"
     "    for k, x in pairs(v) do\n"
     "      local tk, tx = type(k), type(x)\n"
-    "      if (tk == 'number' or tk == 'string') and tx ~= 'function' and tx ~= 'userdata' and tx ~= 'thread' then\n"
-    "        out[#out + 1] = '['; ser(k, out, d + 1); out[#out + 1] = ']='; ser(x, out, d + 1); out[#out + 1] = ','\n"
+    "      if (tk == 'string' or (tk == 'number' and not (math.type(k) == 'integer' and k >= 1 and k <= n)))\n"
+    "          and tx ~= 'function' and tx ~= 'userdata' and tx ~= 'thread' then\n"
+    "        out[#out + 1] = '[' .. ser(k, d + 1) .. ']=' .. ser(x, d + 1)\n"
     "      end\n"
     "    end\n"
-    "    out[#out + 1] = '}'\n"
-    "  else out[#out + 1] = 'nil' end\n"
+    "    return '{' .. table.concat(out, ',') .. '}'\n"
+    "  else return 'nil' end\n"
     "end\n"
     "function data.save(t)\n"
-    "  local out = {'return '}\n"
-    "  ser(t, out, 0)\n"
-    "  local s = table.concat(out)\n"
+    "  local s = 'return ' .. ser(t, 0)\n"
     "  if #s > 8192 then error('data.save: more than 8 KB', 2) end\n"
     "  return _data_write(s)\n"
     "end\n"
@@ -311,6 +448,9 @@ int lr_start(const char *path)
         lr_fail("no memory for Lua");
         return -1;
     }
+    /* the collector early: a cycle when the heap is 10% over what lived after the last (Lua's 200% would let
+     * garbage take a droplet of 60 KB past the 112 KB heap before its first cycle) */
+    lua_gc(LS, LUA_GCINC, 110, 300, 0);
     rp_crumb(5, "libs");
     luaL_requiref(LS, LUA_GNAME, luaopen_base, 1);
     luaL_requiref(LS, LUA_LOADLIBNAME, luaopen_package, 1);
@@ -322,9 +462,15 @@ int lr_start(const char *path)
     lua_settop(LS, 0);
     lib(LS, "screen", SCREEN);
     lib(LS, "flow", FLOW);
-    lua_createtable(LS, 0, 1);
+    lua_createtable(LS, 0, 4);
     lua_pushcfunction(LS, c_load);
     lua_setfield(LS, -2, "load");
+    lua_pushcfunction(LS, c_list);
+    lua_setfield(LS, -2, "list");
+    lua_pushcfunction(LS, c_fits);
+    lua_setfield(LS, -2, "fits");
+    lua_pushcfunction(LS, c_room);
+    lua_setfield(LS, -2, "room");
     lua_setglobal(LS, "current");
     luaL_newmetatable(LS, CUR_MT);
     luaL_newlib(LS, CURRENT_M);
@@ -345,7 +491,23 @@ int lr_start(const char *path)
     lua_setfield(LS, -2, "ms");
     lua_pushcfunction(LS, u_note);
     lua_setfield(LS, -2, "note");
+    lua_pushcfunction(LS, u_cpu);
+    lua_setfield(LS, -2, "cpu");
+    lua_pushcfunction(LS, u_cores);
+    lua_setfield(LS, -2, "cores");
     lua_setglobal(LS, "util");
+    luaL_newmetatable(LS, FX_MT);
+    luaL_newlib(LS, FX_M);
+    lua_setfield(LS, -2, "__index");
+    lua_pop(LS, 1);
+    lua_createtable(LS, 0, 1);
+    lua_pushcfunction(LS, x_new);
+    lua_setfield(LS, -2, "new");
+    lua_setglobal(LS, "midifx");
+    lua_createtable(LS, 0, 1);
+    lua_pushcfunction(LS, t_pressure);
+    lua_setfield(LS, -2, "pressure");
+    lua_setglobal(LS, "touch");
     lua_register(LS, "_data_write", d_write);
     lua_register(LS, "_data_read", d_read);
     rp_crumb(6, "prelude");
@@ -411,13 +573,14 @@ void lr_enc(int n, int d)
     lua_pushinteger(LS, d);
     lr_call("enc", 2);
 }
-void lr_midi(int b0, int b1, int b2)
+void lr_midi(int b0, int b1, int b2, const char *port)
 {
     if (!LS) return;
     lua_pushinteger(LS, b0);
     lua_pushinteger(LS, b1);
     lua_pushinteger(LS, b2);
-    lr_call("midi_in", 3);
+    lua_pushstring(LS, port);
+    lr_call("midi_in", 4);
 }
 void lr_tick(uint32_t ms)
 {

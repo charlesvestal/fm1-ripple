@@ -11,7 +11,7 @@
 #define APP_TAGLINE "droplets and currents"
 #define APP_BLOCK 256u                   /* frames per audio block: 5.8 ms at 44.1 kHz */
 #define APP_TOUCH                        /* velocity from the keys (lib/touch.h) */
-#define APP_CANVAS_PX (240u * 240u)      /* the droplet's whole screen (screen.c) */
+#define APP_CANVAS_PX (240u * 80u)       /* two bands of 40 rows (screen.c dl_show) */
 #define APP_LOOP                         /* every pass of the main loop: disk mode's USB (app_loop) */
 void app_loop(void);
 

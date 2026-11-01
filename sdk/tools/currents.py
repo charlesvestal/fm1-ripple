@@ -96,7 +96,8 @@ def faust_to_c(dsp, work):
          "typedef struct {", f"    {cls} v[NV];",
          "    int note[NV];                 /* the voice's note, -1 free */",
          "    unsigned age[NV], clock;      /* when it started: the oldest goes first */",
-         "    float tl[256], tr[256];       /* a voice's block, mixed in */",
+         "    float tl[256], tr[256];       /* a voice's block, mixed in (part 0 and process) */",
+         "    float tl2[256], tr2[256];     /* part 1's (the second core) */",
          "} st_t;", "",
          "static const rc_param_t P[] = {"]
     for label, _, d, lo, hi in params:
@@ -129,23 +130,29 @@ def faust_to_c(dsp, work):
               f"    s->v[pick].{fq} = 440.0f * fm_exp2f((float)(nt - 69) / 12.0f);",
               f"    s->v[pick].{gn} = vel;", f"    s->v[pick].{gt} = 1.0f;",
               "    s->note[pick] = nt;", "    s->age[pick] = ++s->clock;", "}", ""]
-    w += ["static void process(void *p, float *l, float *r, int n)", "{", "    st_t *s = p;", "    int i, k;",
-          "    float *o[2] = {s->tl, s->tr};"]
-    if ins == 0:
-        w += ["    for (k = 0; k < NV; k++) {", f"        compute{cls}(&s->v[k], n, 0, o);",
+    if ins == 0:                                    # a voice's voices in two parts (the even, the odd): one per core
+        rr = "o[1]" if outs == 2 else "o[0]"
+        w += ["static void process_part(void *p, float *l, float *r, int n, int part)", "{", "    st_t *s = p;",
+              "    int i, k;", "    float *o[2] = {part ? s->tl2 : s->tl, part ? s->tr2 : s->tr};",
+              "    for (k = part; k < NV; k += 2) {", f"        compute{cls}(&s->v[k], n, 0, o);",
               "        for (i = 0; i < n; i++) {",
-              f"            l[i] += s->tl[i];", f"            r[i] += s->t{'r' if outs == 2 else 'l'}[i];",
-              "        }", "    }"]
+              "            l[i] += o[0][i];", f"            r[i] += {rr}[i];",
+              "        }", "    }", "}", "",
+              "static void process(void *p, float *l, float *r, int n)", "{",
+              "    process_part(p, l, r, n, 0);", "    process_part(p, l, r, n, 1);", "}", ""]
     else:
+        w += ["static void process(void *p, float *l, float *r, int n)", "{", "    st_t *s = p;", "    int i;",
+              "    float *o[2] = {s->tl, s->tr};"]
         inp = "{l, r}" if ins == 2 else "{s->tr}"
         if ins == 1:
             w += ["    for (i = 0; i < n; i++) s->tr[i] = 0.5f * (l[i] + r[i]);"]
         w += [f"    float *in[2] = {inp};", f"    compute{cls}(&s->v[0], n, in, o);",
               "    for (i = 0; i < n; i++) {", "        l[i] = s->tl[i];",
-              f"        r[i] = s->t{'r' if outs == 2 else 'l'}[i];", "    }"]
-    w += ["}", "",
+              f"        r[i] = s->t{'r' if outs == 2 else 'l'}[i];", "    }", "}", ""]
+    w += [
           "static const rc_desc_t D = {RC_MAGIC, RC_ABI, " + f'"{name}", sizeof(st_t), {ins and 2}, {voices}, '
-          + f"{len(params)}, P, init, set, " + ("note" if poly else "0") + ", process};",
+          + f"{len(params)}, P, init, set, " + ("note" if poly else "0") + ", process, "
+          + ("2, {0}, process_part, 0};" if ins == 0 and n > 1 else "0, {0}, 0, 0};"),   # (one voice: nothing to split)
           "RC_EXPORT(D)", ""]
     out = work / f"{name}_current.c"
     out.write_text("\n".join(w))
@@ -268,7 +275,17 @@ def pack(elf, out):
         raise SystemExit(f"currents: {elf}: no rc_entry (RC_EXPORT)")
     rel = b"".join(struct.pack("<I", r) for r in relocs)
     s = (sum(img) + sum(rel)) & 0xFFFFFFFF
-    head = struct.pack("<IHHIIIIII", 0x52554352, 1, 0, len(img), bss or 0, entry, len(relocs), s, 0)
+    # what the current is, for a droplet listing the currents without loading them (flow.c flow_info): its
+    # descriptor found by its magic (ripple_current.h: magic, abi, name, state_size, ins, voices), into the header's
+    # spare fields: info = 0x8000 | ins << 8 | voices, and the state's size
+    info, state = 0, 0
+    for k in range(0, len(img) - 18, 4):
+        magic, abi = struct.unpack_from("<II", img, k)
+        if magic == 0x52435231 and abi in (1, 2):
+            state, ins, voices = struct.unpack_from("<IBB", img, k + 12)
+            info = 0x8000 | (0x100 if ins else 0) | voices
+            break
+    head = struct.pack("<IHHIIIIII", 0x52554352, 1, info, len(img), bss or 0, entry, len(relocs), s, state)
     out.write_bytes(head + img + rel)
     return len(img), bss or 0, len(relocs)
 

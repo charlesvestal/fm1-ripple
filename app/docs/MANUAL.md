@@ -71,8 +71,11 @@ While a droplet runs, the keys, knobs and buttons are its own, except HOME held 
 | life | Conway's Game of Life, playing a note for each cell born. |
 | loop | A note looper: play a phrase, it repeats, play over it. |
 | midi | The FM-1 as a USB MIDI controller, with no sound of its own. |
+| monk | A singing voice: lean on a key to open the vowel. |
 | poly | A six-voice synth through a delay. |
+| rack | Build an instrument: MIDI effects into any voice, then two effects. |
 | rain | Plucked notes falling on a scale into a reverb. |
+| sophie | Sixteen pads of metallic FM percussion with a 16-step pattern. |
 
 ### arp
 
@@ -188,6 +191,21 @@ its column is the note of the scale, its row the octave. A grid that goes quiet 
 
 What comes in over MIDI shows at the bottom of the screen.
 
+### monk
+
+MonkSynth's singing voice (by Jonathan Taylor), as MONK-1 has it, through the delay. One note at a time.
+
+| Control | What it does |
+| --- | --- |
+| Keys | Sing, louder the harder you play. Leaning on a key opens the vowel (or bends the note). |
+| OCT− · OCT+ | Move the keys an octave. |
+| ALGORITHM | What leaning does: open the vowel, bend, both, or close the vowel and bend. |
+| EDIT | K1–K4: vowel, head size, breath, level. |
+| LFO | K1–K4: vibrato, its rate, glide, tune. |
+| ENV | K1–K4: attack, decay, sustain, release. |
+| GLO | K1–K4: the choir (1 to 4 voices), their detune, their spread, how far leaning reaches. |
+| FX | K1–K4: the delay's time, feedback, tone and mix. |
+
 ### poly
 
 | Control | What it does |
@@ -198,6 +216,25 @@ What comes in over MIDI shows at the bottom of the screen.
 | K1 · K2 | The filter's cutoff and resonance (with FM: its brightness and ratio). |
 | K3 · K4 | The delay's time and feedback. |
 
+### rack
+
+Build an instrument on the FM-1 from any currents, built in or on the disk: the keys (or a MIDI keyboard, over USB
+or the MIDI jack) go through MIDI effects, into a voice, then through two effects. The MIDI effects are the RS7000's
+Play FX, as e16-launcher has them.
+
+| Control | What it does |
+| --- | --- |
+| ARP | The MIDI effects: SELECT turns their pages (chord, arp, echo, feel, loop); ARP again turns the page's effect on or off. |
+| EDIT · FX · GLO | The voice, the first effect, the second. ALGORITHM picks the current (an effect can be none); SELECT turns its pages of knobs. |
+| K1 · K2 · K3 · K4 | The page's knobs. |
+| SEQ held | The loop: what you just played repeats, as the loop page's loop and stretch say. |
+| PRESET | The tempo (the MIDI effects follow MIDI clock when it comes in). |
+| OCT− · OCT+ | Move the keys an octave. |
+| SAVE | Keeps the rack: its currents, their knobs, the MIDI effects. |
+
+The top of the screen shows how busy the sound is and how much room is left for currents. A current that does not
+fit says so at the bottom, and its slot stays empty.
+
 ### rain
 
 ![rain: ripples spreading where notes fell](img/rain.png "rain")
@@ -207,6 +244,22 @@ What comes in over MIDI shows at the bottom of the screen.
 | PLAY | Stops and starts the rain. |
 | Keys | Play along. |
 | K1 · K2 · K3 · K4 | How hard it rains, how bright the drops are, the reverb's size, how long the strings ring. |
+
+### sophie
+
+Sophie's sixteen pads of metallic FM percussion (by Matt Estela), as SPH-16 has them, through the reverb. Kit 1 is
+Sophie's own.
+
+| Control | What it does |
+| --- | --- |
+| Keys | The lowest sixteen play the pads, harder for louder. The pad you play last is the one the knobs change. |
+| PLAY | Starts and stops the pattern. |
+| REC | While lit, what you play goes into the pattern. |
+| SEQ | The white keys are the steps of the pad you played last. |
+| SELECT · ALGORITHM | The pad; its model (fuse, stack, split, shard, pipe, boom). |
+| EDIT · ENV · LFO · FX | K1–K4: the pad's sound (tune, decay, colour, metal); shape (feedback, sweep, cutoff, resonance); ring (time, amount, mix, tone); grit (drive, crush, level, pan). |
+| GLO | K1–K4: the reverb's size, decay, damping and mix. |
+| PRESET | The tempo. |
 
 ---
 
@@ -265,7 +318,8 @@ To change a built-in droplet, copy it from `builtin/droplets` in Ripple's source
 | --- | --- |
 | The disk | 276 KB |
 | A droplet's memory (Lua) | 112 KB |
-| A droplet's currents, together | 84 KB: the delay takes 66 KB of it and the reverb 36 KB, so one of the two |
+| A droplet's currents, together | 132 KB: the reverb takes 38 KB of it and the delay 16 KB |
+| MIDI effects in one droplet | 2 |
 | Currents in one droplet | 8 |
 | What a droplet saves | 8 KB |
 | Droplets in the list | 47 |

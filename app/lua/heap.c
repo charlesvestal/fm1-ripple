@@ -53,12 +53,21 @@ static void heap_reset(void)
 
 static void *heap_alloc(uint32_t n)
 {
-    uint32_t want = (n + 4u + 7u) & ~7u, i;
+    uint32_t want = (n + 4u + 7u) & ~7u, i, best = 0, best_sz = 0xFFFFFFFFu;
     if (want < H_MIN) want = H_MIN;
-    if (!heap_free_head) return 0;
+    /* best fit (the smallest free block that holds it; an exact one at once): first fit took the newest free block
+     * that held it, and a droplet's thousands of small objects cut the heap into pieces too small for a table */
     for (i = heap_free_head; i; i = NEXTF(i)) {
         uint32_t sz = BSIZE(i);
-        if (sz < want) continue;
+        if (sz >= want && sz < best_sz) {
+            best = i;
+            best_sz = sz;
+            if (sz - want < H_MIN)
+                break;
+        }
+    }
+    if ((i = best) != 0) {
+        uint32_t sz = best_sz;
         heap_unlink(i);
         if (sz - want >= H_MIN) {           /* split: the rest stays free */
             uint32_t r = i + want / 4u;
@@ -108,7 +117,16 @@ static void *heap_realloc(void *p, uint32_t n)
     sz = BSIZE(i);
     want = (n + 4u + 7u) & ~7u;
     if (want < H_MIN) want = H_MIN;
-    if (want <= sz) return p;               /* smaller: keep it where it is */
+    if (want <= sz) {                       /* smaller: where it is, the rest given back (Lua shrinks its tables and
+                                             * buffers often; kept, the space was lost until the block was freed) */
+        if (sz - want >= H_MIN) {
+            uint32_t r = i + want / 4u;
+            HDR(i) = want | H_USED | (HDR(i) & H_PREV);
+            HDR(r) = (sz - want) | H_USED | H_PREV;
+            heap_free(&heap_mem[r + 1]);
+        }
+        return p;
+    }
     nx = i + sz / 4u;
     if (!(HDR(nx) & H_USED) && sz + BSIZE(nx) >= want) {   /* grow into the free block after it */
         uint32_t all = sz + BSIZE(nx);

@@ -18,6 +18,14 @@ static void text_cat(char *d, const char *s)
 #include "disk.c"
 #include "screen.c"
 #include "flow.c"
+#include "fx.c"
+
+/* a droplet ends (left, failed, another started): its currents and its MIDI effects go */
+static void droplet_end(void)
+{
+    fx_free_all();
+    flow_reset();
+}
 
 #define SET_MAGIC 0x52505031u            /* "1PPR": the settings record */
 typedef struct {
@@ -97,6 +105,50 @@ void rp_set(int h, int p, float v) { flow_set(h, p, v); }
 void rp_note(int h, int note, float vel) { flow_note(h, note, vel); }
 void rp_route(const int *hs, int n) { flow_route(hs, n); }
 void rp_level(float v) { flow_gain = fm_clampf(v, 0.0f, 1.0f); }
+void rp_clear(void) { flow_clear(); }
+uint32_t rp_gen(void) { return flow_gen; }
+int rp_fits(const char *name) { return flow_fits(name); }
+uint32_t rp_room(void) { return flow_room(); }
+int rp_info(const char *name, int *kind, int *voices, uint32_t *code, uint32_t *state)
+{
+    cur_info_t in;
+    if (flow_info(name, &in) != 0)
+        return -1;
+    *kind = in.kind, *voices = in.voices, *code = in.code, *state = in.state;
+    return 0;
+}
+
+static int name_cmp(const char *a, const char *b);
+/* the currents there are: the disk's, then the built-in ones it does not replace, in alphabetical order */
+#define NCURLIST 48
+static char cur_names[NCURLIST][28];
+int rp_currents(void)
+{
+    char name[40];
+    disk_file_t f;
+    int v, i, k, j, n = 0;
+    for (v = DISK_VOL; v <= BUILTIN_VOL; v++)
+        for (i = 0; n < NCURLIST && disk_entry(v, "/currents", i, name, sizeof name, &f); i++) {
+            size_t len = strlen(name);
+            if (f.dir || len < 5u || len > 27u || name[len - 4] != '.' || (name[len - 3] | 32) != 'c'
+                || (name[len - 2] | 32) != 'u' || (name[len - 1] | 32) != 'r')
+                continue;
+            name[len - 4] = 0;
+            for (k = 0; k < n && strcmp(cur_names[k], name); k++)
+                ;
+            if (k < n)
+                continue;
+            strcpy(cur_names[n], name);
+            for (j = n++; j > 0 && name_cmp(cur_names[j - 1], cur_names[j]) > 0; j--) {
+                char t[28];
+                strcpy(t, cur_names[j]);
+                strcpy(cur_names[j], cur_names[j - 1]);
+                strcpy(cur_names[j - 1], t);
+            }
+        }
+    return n;
+}
+const char *rp_current_name(int i) { return i >= 0 && i < NCURLIST ? cur_names[i] : ""; }
 float rp_peak(void) { return flow_peak; }
 
 static uint32_t led_btn, led_key_bits;
@@ -128,6 +180,9 @@ int rp_button_index(const char *name)
 }
 const char *rp_button_name(int b) { return b >= 0 && b < NB ? BTN_NAME[b] : "?"; }
 uint32_t rp_ms(void) { return plat_ms(); }
+int rp_cpu(void) { return (int)plat_cpu_pct(); }
+int rp_cores(void) { return plat_cpu2_on() ? 2 : 1; }
+int rp_pressure(int k) { return k >= 0 && k < NKEYS ? touch_pressure((uint32_t)k) : 0; }
 void rp_crumb(uint32_t step, const char *what) { crumb_set(step, what); }
 
 /* the running droplet's data file: its name in 8.3, from the droplet's ("awake.lua" -> AWAKE.DAT) */
@@ -199,6 +254,7 @@ void app_init(void)
     crumb_set(0, "boot");
     crumb.in_render = 0;
     plat_code_window(arena + sizeof arena);   /* the currents' code may run in the arena */
+    plat_cpu2_set(1);                    /* the second core (flow.c render_run): at power-on, before the audio */
     if (!disk_ok())                      /* a new FM-1, or a disk the computer broke: an empty one */
         disk_format_default();
 }
@@ -293,7 +349,7 @@ static void stem(const char *name, char *out)  /* "poly.lua" -> "poly" */
 static void go_list(void)
 {
     lr_stop();
-    flow_reset();
+    droplet_end();
     led_btn = led_key_bits = 0;
     ui.mode = MODE_LIST;
     scr_defaults();
@@ -310,7 +366,7 @@ static void start(int i)
         plat_store_save(OBJ_SETTINGS, &set, sizeof set);
     }
     crumb_set(2, ui.names[i]);
-    flow_reset();
+    droplet_end();
     scr_defaults();
     con_n = con_col = 0;
     con[0][0] = 0;
@@ -319,7 +375,7 @@ static void start(int i)
     strcpy(run_name, ui.names[i]);
     crumb_set(3, ui.names[i]);
     if (lr_start(path) != 0) {
-        flow_reset();
+        droplet_end();
         ui.mode = MODE_ERROR;
     } else {
         crumb_set(9, "running");
@@ -335,10 +391,10 @@ static void draw_list(void)
     int i, rows = 9, y;
     char t[40];
     uint32_t used, peak;
-    cv_begin(240, 240, scr_pal[0]);
-    cv_text(12, 10, &FONT_B, "RIPPLE", scr_pal[14]);
-    cv_text(84, 12, &FONT_XS, "droplets", scr_pal[8]);
-    cv_rect(12, 32, 216, 1, scr_pal[3]);
+    dl_begin(scr_pal[0]);
+    dl_text(12, 10, &FONT_B, "RIPPLE", scr_pal[14]);
+    dl_text(84, 12, &FONT_XS, "droplets", scr_pal[8]);
+    dl_rect(12, 32, 216, 1, scr_pal[3]);
     if (ui.sel < ui.top)
         ui.top = ui.sel;
     if (ui.sel >= ui.top + rows)
@@ -346,36 +402,36 @@ static void draw_list(void)
     for (i = ui.top, y = 40; i < ui.n + SYS_N && i < ui.top + rows; i++, y += 20) {
         int on = i == ui.sel;
         if (on)
-            cv_rect(8, y - 2, 224, 20, scr_pal[4]);
+            dl_rect(8, y - 2, 224, 20, scr_pal[4]);
         if (i < ui.n) {
             stem(ui.names[i], t);
             if (ui.mine[i])                  /* yours: a filled drop; built in: an outline */
-                cv_rect(16, y + 6, 5, 5, on ? scr_pal[15] : scr_pal[9]);
+                dl_rect(16, y + 6, 5, 5, on ? scr_pal[15] : scr_pal[9]);
             else {
-                cv_rect(16, y + 6, 5, 1, on ? scr_pal[15] : scr_pal[6]);
-                cv_rect(16, y + 10, 5, 1, on ? scr_pal[15] : scr_pal[6]);
-                cv_rect(16, y + 6, 1, 5, on ? scr_pal[15] : scr_pal[6]);
-                cv_rect(20, y + 6, 1, 5, on ? scr_pal[15] : scr_pal[6]);
+                dl_rect(16, y + 6, 5, 1, on ? scr_pal[15] : scr_pal[6]);
+                dl_rect(16, y + 10, 5, 1, on ? scr_pal[15] : scr_pal[6]);
+                dl_rect(16, y + 6, 1, 5, on ? scr_pal[15] : scr_pal[6]);
+                dl_rect(20, y + 6, 1, 5, on ? scr_pal[15] : scr_pal[6]);
             }
-            cv_text(30, y, &FONT_S, t, on ? scr_pal[15] : scr_pal[12]);
+            dl_text(30, y, &FONT_S, t, on ? scr_pal[15] : scr_pal[12]);
         } else {
-            cv_text(30, y, &FONT_S, i - ui.n == SYS_DISK ? "disk mode" :
+            dl_text(30, y, &FONT_S, i - ui.n == SYS_DISK ? "disk mode" :
                     plat_ms() < ui.confirm_until ? "PLAY again: erase your files" : "empty the disk",
                     on ? scr_pal[15] : scr_pal[8]);
         }
     }
     if (!ui.n)
-        cv_text(30, 60, &FONT_S, "no droplets", scr_pal[10]);
-    cv_rect(12, 220, 216, 1, scr_pal[3]);
+        dl_text(30, 60, &FONT_S, "no droplets", scr_pal[10]);
+    dl_rect(12, 220, 216, 1, scr_pal[3]);
     used = lr_mem(&peak);
     (void)used;
-    cv_text(12, 224, &FONT_XS, "PLAY start   HOME held: back", scr_pal[8]);
+    dl_text(12, 224, &FONT_XS, "PLAY start   HOME held: back", scr_pal[8]);
     if (plat_ms() < ui.msg_until) {
-        cv_rect(0, 196, 240, 22, scr_pal[2]);
-        cv_text(12, 199, &FONT_S, ui.msg[0], scr_pal[15]);
-        cv_text(12 + text_w(&FONT_S, ui.msg[0]) + 8, 199, &FONT_S, ui.msg[1], scr_pal[11]);
+        dl_rect(0, 196, 240, 22, scr_pal[2]);
+        dl_text(12, 199, &FONT_S, ui.msg[0], scr_pal[15]);
+        dl_text(12 + text_w(&FONT_S, ui.msg[0]) + 8, 199, &FONT_S, ui.msg[1], scr_pal[11]);
     }
-    cv_blit(0, 0);
+    dl_show();
 }
 
 /* disk mode: the FM-1 as a USB drive until the computer ejects it (or HOME) */
@@ -384,7 +440,7 @@ static void disk_mode(int on)
 {
     if (on) {
         lr_stop();
-        flow_reset();
+        droplet_end();
         ui.mode = MODE_DISK;
         disk_state = PLAT_DISK_WAITING;
         plat_disk_mode(&DISK_MODE);
@@ -400,6 +456,7 @@ static void disk_mode(int on)
 void app_loop(void)
 {
     int st;
+    fx_tick();                           /* the MIDI effects: what is due */
     if (ui.mode != MODE_DISK)
         return;
     st = plat_disk_poll();
@@ -417,19 +474,19 @@ static void draw_disk(void)
 {
     static const char *const SAY[] = {"", "connect the FM-1 to a computer", "on the computer: a drive called RIPPLE",
                                       ""};
-    cv_begin(240, 240, scr_pal[0]);
-    cv_text(12, 10, &FONT_B, "RIPPLE", scr_pal[14]);
-    cv_text(84, 12, &FONT_XS, "disk mode", scr_pal[8]);
-    cv_rect(12, 32, 216, 1, scr_pal[3]);
-    cv_rect(84, 70, 72, 52, scr_pal[2]);     /* a drive */
-    cv_rect(92, 78, 56, 26, scr_pal[disk_state == PLAT_DISK_MOUNTED ? 12 : 5]);
-    cv_rect(140, 110, 8, 4, scr_pal[disk_state == PLAT_DISK_MOUNTED ? 15 : 6]);
-    cv_text(120 - text_w(&FONT_S, SAY[disk_state & 3u]) / 2, 140, &FONT_S, SAY[disk_state & 3u], scr_pal[13]);
-    cv_text(12, 168, &FONT_XS, "droplets go in /droplets, currents in /currents", scr_pal[9]);
-    cv_text(12, 184, &FONT_XS, "eject the drive when done: Ripple comes back", scr_pal[9]);
-    cv_rect(12, 220, 216, 1, scr_pal[3]);
-    cv_text(12, 224, &FONT_XS, "HOME: back now", scr_pal[8]);
-    cv_blit(0, 0);
+    dl_begin(scr_pal[0]);
+    dl_text(12, 10, &FONT_B, "RIPPLE", scr_pal[14]);
+    dl_text(84, 12, &FONT_XS, "disk mode", scr_pal[8]);
+    dl_rect(12, 32, 216, 1, scr_pal[3]);
+    dl_rect(84, 70, 72, 52, scr_pal[2]);     /* a drive */
+    dl_rect(92, 78, 56, 26, scr_pal[disk_state == PLAT_DISK_MOUNTED ? 12 : 5]);
+    dl_rect(140, 110, 8, 4, scr_pal[disk_state == PLAT_DISK_MOUNTED ? 15 : 6]);
+    dl_text(120 - text_w(&FONT_S, SAY[disk_state & 3u]) / 2, 140, &FONT_S, SAY[disk_state & 3u], scr_pal[13]);
+    dl_text(12, 168, &FONT_XS, "droplets go in /droplets, currents in /currents", scr_pal[9]);
+    dl_text(12, 184, &FONT_XS, "eject the drive when done: Ripple comes back", scr_pal[9]);
+    dl_rect(12, 220, 216, 1, scr_pal[3]);
+    dl_text(12, 224, &FONT_XS, "HOME: back now", scr_pal[8]);
+    dl_show();
 }
 
 static void draw_error(void)
@@ -437,9 +494,9 @@ static void draw_error(void)
     const char *e = lr_error();
     int y = 44, x;
     uint32_t i, k;
-    cv_begin(240, 240, RGB(30, 10, 14));
-    cv_text(12, 10, &FONT_B, "the droplet stopped", RGB(250, 150, 140));
-    cv_rect(12, 32, 216, 1, RGB(110, 40, 44));
+    dl_begin(RGB(30, 10, 14));
+    dl_text(12, 10, &FONT_B, "the droplet stopped", RGB(250, 150, 140));
+    dl_rect(12, 32, 216, 1, RGB(110, 40, 44));
     /* the error, wrapped at the screen's edge */
     while (*e && y < 170) {
         char ln[48];
@@ -458,7 +515,7 @@ static void draw_error(void)
             n = cut;
         memcpy(ln, e, (size_t)n);
         ln[n] = 0;
-        cv_text(12, y, &FONT_XS, ln, RGB(240, 220, 220));
+        dl_text(12, y, &FONT_XS, ln, RGB(240, 220, 220));
         y += 14;
         e += n;
         while (*e == ' ' || *e == '\n')
@@ -467,9 +524,9 @@ static void draw_error(void)
     /* what it printed last */
     for (i = con_n > 2u ? con_n - 2u : 0, k = 0; i <= con_n; i++, k++)
         if (con[i % CON_LINES][0])
-            cv_text(12, 178 + (int)k * 14, &FONT_XS, con[i % CON_LINES], RGB(170, 150, 150));
-    cv_text(12, 224, &FONT_XS, "HOME: back to the droplets", RGB(200, 140, 140));
-    cv_blit(0, 0);
+            dl_text(12, 178 + (int)k * 14, &FONT_XS, con[i % CON_LINES], RGB(170, 150, 150));
+    dl_text(12, 224, &FONT_XS, "HOME: back to the droplets", RGB(200, 140, 140));
+    dl_show();
 }
 
 static void input(void)
@@ -499,10 +556,11 @@ static void input(void)
                     lr_enc(ROLE_N[k], e);
         }
         while (plat_midi_in(&pkt, &port))
-            lr_midi((int)(pkt >> 8 & 0xFFu), (int)(pkt >> 16 & 0x7Fu), (int)(pkt >> 24 & 0x7Fu));
+            lr_midi((int)(pkt >> 8 & 0xFFu), (int)(pkt >> 16 & 0x7Fu), (int)(pkt >> 24 & 0x7Fu),
+                    port == PORT_TRS ? "trs" : port == PORT_BLE ? "ble" : "usb");
         lr_tick(now);
         if (!lr_running()) {             /* it stopped on an error */
-            flow_reset();
+            droplet_end();
             ui.mode = MODE_ERROR;
             ui.redraw = 1;
         }
@@ -579,6 +637,14 @@ static void speak(void)
         return;
     t[0] = 0;
     text_cat(t, ui.mode == MODE_LIST ? "LIST" : ui.mode == MODE_RUN ? "RUN" : ui.mode == MODE_ERROR ? "ERROR " : "DISK");
+    if (ui.mode == MODE_RUN) {               /* which droplet (tools/fm1_remote.py screen) */
+        text_cat(t, " ");
+        text_cat(t, run_name);
+    }
+    if (ui.mode == MODE_LIST && ui.sel < ui.n) {   /* the one PLAY would start */
+        text_cat(t, " AT ");
+        text_cat(t, ui.names[ui.sel]);
+    }
     if (ui.mode == MODE_ERROR) {
         uint32_t k = strlen(t), i;
         for (i = 0; lr_error()[i] && k < 70u; i++)
@@ -605,6 +671,12 @@ static void speak(void)
         int_cat(u, (int32_t)(crumb_boot_spmin & 0xFFFFFu));
         text_cat(u, " CPU ");
         int_cat(u, (int32_t)plat_cpu_pct());
+        text_cat(u, " CORES ");
+        int_cat(u, (int32_t)rp_cores());
+        text_cat(u, " XRUNS ");
+        int_cat(u, (int32_t)plat_xruns());
+        text_cat(u, " PEAK ");               /* the last block's loudest, in hundredths (100: full scale) */
+        int_cat(u, (int32_t)(flow_peak * 100.0f + 0.5f));
         text_cat(t, u);
     }
     ann_say(t, 0, ANN_NOW);
@@ -679,6 +751,14 @@ int app_expect(const char *what, int *got)
             printf("  droplet error: %s\n", lr_error());
     } else if (!strcmp(what, "arena_kb"))
         *got = (int)(arena_top / 1024u);
+    else if (!strcmp(what, "dl_peak"))       /* the most draw ops a screen has had (screen.c) */
+        *got = (int)dl_peak;
+    else if (!strcmp(what, "dl_lost"))       /* ops that did not fit the list */
+        *got = (int)dl_lost;
+    else if (!strcmp(what, "state_kb"))
+        *got = (int)(sarena_top / 1024u);
+    else if (!strcmp(what, "c2_blocks"))     /* blocks the second core took part in */
+        *got = (int)flow_c2_blocks;
     else
         return 0;
     return 1;

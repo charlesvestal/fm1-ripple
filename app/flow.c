@@ -6,6 +6,13 @@
  * loads and routes; parameter changes and notes go to the render through a queue, so the render alone calls into a
  * current once it plays. Leaving a droplet empties the arena. Part of the unity build (app.c).
  *
+ * Memory: the images (code and data) go into the arena in the pool; the currents' states first into a second arena in
+ * RAM (.bss, inside the code window too), then the pool's when that is full.
+ *
+ * Two cores (fm1.toml cpu2): in each run of currents that add to the bus (nothing between them that processes it),
+ * the second core takes part 1 of each current in two parts (ripple_current.h: parts) and every other current not in
+ * parts, into its own bus, while the first does the rest; the two buses are added before what comes next.
+ *
  * The host simulator cannot run the FM-1's code: there a current is the same source built for the computer
  * (app/build/currents-host/NAME.so, sdk/tools/currents.py --host), opened by name; the .cur must still be on the
  * disk. */
@@ -45,23 +52,26 @@ static void crumb_set(uint32_t step, const char *what)
 
 #define FLOW_MAX 8                          /* currents loaded at once */
 #define FLOW_ARENA_KB 84
+#define FLOW_STATE_KB 48                    /* the states' arena, in RAM */
 #define CUR_MAGIC 0x52554352u               /* "RCUR": the .cur header */
 #define CUR_VERSION 1u
 
 typedef struct {
     uint32_t magic;
-    uint16_t version, rsv;
+    uint16_t version, info;                 /* info (0: none): 0x8000 | 0x100 when it processes the bus | voices */
     uint32_t image_size, bss_size;          /* the image (code, constants, data), then zeroed bytes */
     uint32_t entry;                         /* rc_entry's offset in the image */
     uint32_t nrelocs;                       /* after the image: one word each, offset | type << 28 */
     uint32_t sum;                           /* the image's and the relocations' sum of bytes */
-    uint32_t rsv2;
+    uint32_t state_size;                    /* (with info) the state it asks for */
 } cur_head_t;
 enum { REL_ABS32 = 1, REL_MOV32 = 2 };      /* a word; the 32-bit immediate of a 6-byte move, at offset + 2 */
 
 typedef struct {
     const rc_desc_t *d;
     void *st;
+    uint8_t parts;                          /* 2: it splits (ABI 2, parts 2, process_part, adds to the bus) */
+    void (*begin)(void *st, int n);         /* ABI 2's, or 0 */
     char name[16];
 } cur_t;
 
@@ -69,6 +79,8 @@ static cur_t curs[FLOW_MAX];
 static uint32_t ncurs;
 static uint8_t arena[FLOW_ARENA_KB * 1024u] PLAT_POOL __attribute__((aligned(8)));
 static uint32_t arena_top;
+static uint8_t sarena[FLOW_STATE_KB * 1024u] __attribute__((aligned(8)));
+static uint32_t sarena_top;
 static volatile uint8_t route[FLOW_MAX], route_n;   /* the order on the bus (indexes into curs) */
 static uint8_t route_set_n;                 /* what the droplet set (a pause sets route_n 0 a moment) */
 static volatile float flow_gain = 0.5f;     /* the droplet's level */
@@ -82,8 +94,8 @@ typedef struct {
     int16_t a;
     float v;
 } flow_ev_t;
-#define EVQ 128u
-static flow_ev_t evq[EVQ];
+#define EVQ 512u                            /* (a kit: 16 pads of a dozen settings, sent at once) */
+static flow_ev_t evq[EVQ] PLAT_POOL;
 static volatile uint32_t evq_w, evq_r;
 
 static void *arena_take(uint32_t n)
@@ -94,6 +106,17 @@ static void *arena_take(uint32_t n)
     arena_top = at + n;
     memset(arena + at, 0, n);
     return arena + at;
+}
+
+/* a current's state: the RAM arena, else the pool's */
+static void *state_take(uint32_t n)
+{
+    uint32_t at = (sarena_top + 7u) & ~7u;
+    if (at + n > sizeof sarena)
+        return arena_take(n);
+    sarena_top = at + n;
+    memset(sarena + at, 0, n);
+    return sarena + at;
 }
 
 static void flow_push(uint8_t type, int cur, int a, float v)
@@ -123,10 +146,57 @@ static void flow_reset(void)
     route_set_n = 0;
     ncurs = 0;
     arena_top = 0;
+    sarena_top = 0;
     memset(curs, 0, sizeof curs);
 }
 
 static const char *flow_err;                /* why the last load failed */
+static uint32_t flow_gen;                   /* flow_clear's count: a droplet's handles from before it are stale */
+
+/* a current on the disk or built in, without loading it: 0, or -1 (not there, not a current). kind: 0 makes sound,
+ * 1 processes the bus, -1 not said (built before the SDK wrote it); code: the image and its zeroed data */
+typedef struct {
+    int kind, voices;
+    uint32_t code, state;
+} cur_info_t;
+static int flow_info(const char *name, cur_info_t *in)
+{
+    char path[48] = "/currents/";
+    disk_file_t f;
+    cur_head_t h;
+    text_cat(path, name);
+    text_cat(path, ".cur");
+    if (strlen(name) > 24u || disk_open(path, &f) != 0 || disk_read(&f, 0, &h, sizeof h) != sizeof h
+        || h.magic != CUR_MAGIC)
+        return -1;
+    in->kind = h.info & 0x8000u ? (h.info >> 8 & 1) : -1;
+    in->voices = h.info & 0x8000u ? (int)(h.info & 0xFFu) : 0;
+    in->code = h.image_size + h.bss_size;
+    in->state = h.info & 0x8000u ? h.state_size : 0;
+    return 0;
+}
+
+/* whether it would load now (the image into the pool's arena; its state into RAM's, else after the image) */
+static int flow_fits(const char *name)
+{
+    cur_info_t in;
+    uint32_t a = (arena_top + 7u) & ~7u, s = (sarena_top + 7u) & ~7u;
+    if (flow_info(name, &in) != 0 || ncurs >= FLOW_MAX || a + in.code > sizeof arena)
+        return 0;
+    if (s + in.state <= sizeof sarena)
+        return 1;
+    return ((a + in.code + 7u) & ~7u) + in.state <= sizeof arena;
+}
+
+/* the room left, bytes, both arenas */
+static uint32_t flow_room(void) { return (uint32_t)(sizeof arena - arena_top + sizeof sarena - sarena_top); }
+
+/* the droplet's currents all gone (it loads others): flow_reset, and its handles stale */
+static void flow_clear(void)
+{
+    flow_reset();
+    flow_gen++;
+}
 
 #ifndef PLAT_HOST
 static const rc_desc_t *cur_link(const char *path)
@@ -232,7 +302,7 @@ static int flow_load(const char *name)
     char path[48] = "/currents/";
     const rc_desc_t *d;
     cur_t *c;
-    uint32_t i, top = arena_top;
+    uint32_t i, top = arena_top, stop = sarena_top;
     for (i = 0; name[i] && i < 24u; i++)
         path[10 + i] = name[i];
     path[10 + i] = 0;
@@ -245,19 +315,22 @@ static int flow_load(const char *name)
         arena_top = top;
         return -1;
     }
-    if (d->magic != RC_MAGIC || d->abi != RC_ABI || !d->process || !d->set || d->nparams > RC_MAX_PARAMS
+    if (d->magic != RC_MAGIC || (d->abi != 1u && d->abi != RC_ABI) || !d->process || !d->set || d->nparams > RC_MAX_PARAMS
         || (d->voices && !d->note)) {
         flow_err = "built for another Ripple";
         arena_top = top;
         return -1;
     }
     c = &curs[ncurs];
-    if (!(c->st = arena_take(d->state_size ? d->state_size : 4u))) {
+    if (!(c->st = state_take(d->state_size ? d->state_size : 4u))) {
         flow_err = "no room";
         arena_top = top;
+        sarena_top = stop;
         return -1;
     }
     c->d = d;
+    c->parts = d->abi >= 2u && d->parts == 2u && d->process_part && !d->ins ? 2u : 0u;
+    c->begin = d->abi >= 2u ? d->begin : 0;
     for (i = 0; name[i] && i < sizeof c->name - 1u; i++)
         c->name[i] = name[i];
     c->name[i] = 0;
@@ -318,6 +391,72 @@ static void flow_route_restore(void) { route_n = route_set_n; }
 
 /* --------------------------------------------------------------- the render --- */
 static float bus_l[APP_BLOCK], bus_r[APP_BLOCK];
+static float c2_l[APP_BLOCK], c2_r[APP_BLOCK];   /* the second core's bus */
+static uint8_t c2_job[FLOW_MAX], c2_part[FLOW_MAX], c2_n;   /* its job: these currents (part 1, or whole: 0xFF) */
+static uint32_t c2_frames;
+static volatile uint32_t flow_c2_blocks;    /* blocks the second core took part in */
+
+static void c2_run(uint32_t arg)
+{
+    uint32_t k, n = c2_frames;
+    (void)arg;
+    memset(c2_l, 0, n * sizeof(float));
+    memset(c2_r, 0, n * sizeof(float));
+    for (k = 0; k < c2_n; k++) {
+        cur_t *c = &curs[c2_job[k]];
+        if (c2_part[k] == 1u)
+            c->d->process_part(c->st, c2_l, c2_r, (int)n, 1);
+        else
+            c->d->process(c->st, c2_l, c2_r, (int)n);
+    }
+}
+
+/* the currents route[k0..k1), which all add to the bus: shared between the cores when the second runs */
+static void render_run(uint32_t k0, uint32_t k1, uint32_t n)
+{
+    uint32_t k, i, mine[FLOW_MAX], nmine = 0, whole = 0;
+    int on2;
+    c2_n = 0;
+    for (k = k0; k < k1; k++) {
+        cur_t *c = &curs[route[k]];
+        if (c->parts) {
+            c2_job[c2_n] = route[k];
+            c2_part[c2_n++] = 1u;
+            mine[nmine++] = route[k];
+        } else if (whole++ & 1u) {
+            c2_job[c2_n] = route[k];
+            c2_part[c2_n++] = 0xFFu;
+        } else
+            mine[nmine++] = route[k];
+    }
+    c2_frames = n;
+    on2 = c2_n && plat_cpu2_on() && plat_cpu2_run(c2_run, 0);
+    if (!on2) {                             /* one core: each current whole, in order */
+        for (k = k0; k < k1; k++) {
+            cur_t *c = &curs[route[k]];
+            crumb.in_render = route[k] + 1u;
+            c->d->process(c->st, bus_l, bus_r, (int)n);
+        }
+        crumb.in_render = 0;
+        return;
+    }
+    for (k = 0; k < nmine; k++) {
+        cur_t *c = &curs[mine[k]];
+        crumb.in_render = mine[k] + 1u;
+        if (c->parts)
+            c->d->process_part(c->st, bus_l, bus_r, (int)n, 0);
+        else
+            c->d->process(c->st, bus_l, bus_r, (int)n);
+    }
+    crumb.in_render = 0;
+    if (plat_cpu2_wait() != 0)              /* (given up: the job dropped) */
+        c2_run(0);
+    for (i = 0; i < n; i++) {
+        bus_l[i] += c2_l[i];
+        bus_r[i] += c2_r[i];
+    }
+    flow_c2_blocks++;
+}
 
 static void flow_render(int32_t *lr, uint32_t n, uint32_t master_q12)
 {
@@ -337,12 +476,27 @@ static void flow_render(int32_t *lr, uint32_t n, uint32_t master_q12)
     memset(bus_l, 0, n * sizeof(float));
     memset(bus_r, 0, n * sizeof(float));
     rn = route_n;
-    for (k = 0; k < rn; k++) {
+    for (k = 0; k < rn; k++) {              /* each current's once-a-block work, before any of them renders */
         cur_t *c = &curs[route[k]];
-        crumb.in_render = route[k] + 1u;
-        if (c->d)
+        if (c->begin)
+            c->begin(c->st, (int)n);
+    }
+    for (k = 0; k < rn;) {
+        cur_t *c = &curs[route[k]];
+        if (!c->d) {
+            k++;
+        } else if (c->d->ins) {             /* an effect: on the bus as it is */
+            crumb.in_render = route[k] + 1u;
             c->d->process(c->st, bus_l, bus_r, (int)n);
-        crumb.in_render = 0;
+            crumb.in_render = 0;
+            k++;
+        } else {                            /* a run of currents that add to it */
+            uint32_t k1 = k + 1u;
+            while (k1 < rn && curs[route[k1]].d && !curs[route[k1]].d->ins)
+                k1++;
+            render_run(k, k1, n);
+            k = k1;
+        }
     }
     g = flow_gain * (float)master_q12 / 4096.0f * 8388607.0f;
     for (i = 0; i < n; i++) {               /* soft above full scale, then 24-bit */

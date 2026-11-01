@@ -6,15 +6,15 @@ usb_product = "Ripple FM-1"
 ble = false                    # not in the first version: the pool goes to Lua and the currents
 usb_audio_in = true
 usb_audio_out = false
+cpu2 = true                    # the second core: half of each run of currents (flow.c render_run)
 msc = true                     # disk mode: the FM-1 as a USB drive of its disk (disk.c)
-mirror = true                  # the screen and panel over USB (fm1-base web/mirror, tools/fm1_remote.py)
 words = "words.tsv"
 font_full = ["M"]              # droplets write lower case in every size
 include = ["lua", "../sdk/include", "../sdk/faust"]
 web = ["build/currents-web/*.c"] # the emulator: the currents linked in (sdk/tools/currents.py --web, gen)
 web_cflags = ["-sSUPPORT_LONGJMP=wasm"]   # Lua's errors in the emulator: WebAssembly's own setjmp (no JavaScript)
 device_include = ["lua/libc"]          # declarations of the few C library calls Lua makes (luaport.c has them)
-o2 = ["lua/lua_one.c"]         # Lua and the droplet API, its own unit (o2_cflags: at -Os, it is not the render)
+o2 = ["lua/lua_one.c", "midifx/mfx_one.c"]         # Lua and the droplet API, and the MIDI effects: units of their own (o2_cflags: at -Os, not the render)
 o2_cflags = ["-Os"]
 asm = ["lua/lj.S"]             # Lua's errors: setjmp / longjmp
 vendored = ["third_party/"]

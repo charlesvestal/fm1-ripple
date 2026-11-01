@@ -1,7 +1,7 @@
 # Every built-in droplet started by name, played a little, and checked: no error, and sound (midi: MIDI out).
 # Screenshots NAME.png in the output directory.
 wait 600
-expect droplets 12
+expect droplets 15
 start euclid
 wait 300
 peakreset
