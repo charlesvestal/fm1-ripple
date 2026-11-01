@@ -1,0 +1,11 @@
+# Lua on Ripple: tests/disk/droplets/selftest.lua (made into a disk by tests/run_tests.sh) checks the port
+wait 600
+data app/build/scenarios/selftest/selftest.img 0x97000
+reboot
+wait 600
+expect droplets 1
+tap PLAY
+wait 300
+expect error 0
+expect mode 1
+shot error.png

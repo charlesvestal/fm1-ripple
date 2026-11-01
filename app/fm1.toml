@@ -1,0 +1,24 @@
+# Ripple's build settings (fm1-base's tools/build.py: ./build.sh)
+name = "RIPPLE"                # the build's files: ripple.fwsc, ripple-X.Y.fwsc
+id_prefix = "FM-1_13"          # package identity: dev FM-1_1300, releases FM-1_13XXYYZZ
+usb_manufacturer = "Ripple"
+usb_product = "Ripple FM-1"
+ble = false                    # not in the first version: the pool goes to Lua and the currents
+usb_audio_in = true
+usb_audio_out = false
+msc = true                     # disk mode: the FM-1 as a USB drive of its disk (disk.c)
+mirror = true                  # the screen and panel over USB (fm1-base web/mirror, tools/fm1_remote.py)
+words = "words.tsv"
+font_full = ["M"]              # droplets write lower case in every size
+include = ["lua", "../sdk/include"]
+device_include = ["lua/libc"]          # declarations of the few C library calls Lua makes (luaport.c has them)
+o2 = ["lua/lua_one.c"]         # Lua and the droplet API, its own unit (o2_cflags: at -Os, it is not the render)
+o2_cflags = ["-Os"]
+asm = ["lua/lj.S"]             # Lua's errors: setjmp / longjmp
+vendored = ["third_party/"]
+gen = ["../tools/mkdisk.py build/disk --header {gen}/disk_image.h"]   # the shipped disk: disk/ and the built currents (build.sh)
+# the site
+tagline = "Droplets and currents for the FM-1"
+repo = "https://github.com/charlesvestal/fm1-ripple"
+licence = "MPL-2.0"
+credits = "Built on fm1-base and felucca-bsp, from Felucca by Leo Kuroshita (Hügelton Instruments). Lua 5.4 (MIT, Lua.org, PUC-Rio). Currents in Faust (GRAME)."

@@ -1,0 +1,73 @@
+-- selftest: Lua on Ripple (32-bit integers and floats, our own formatting): every check, or an error.
+local function eq(got, want, what)
+  if got ~= want then error(what .. ": got " .. tostring(got) .. ", want " .. tostring(want), 2) end
+end
+-- numbers to text
+eq(tostring(1), "1", "integer")
+eq(tostring(-42), "-42", "negative integer")
+eq(tostring(0.5), "0.5", "float")
+eq(tostring(1.0), "1.0", "whole float")
+eq(tostring(3.25), "3.25", "float 3.25")
+eq(tostring(-0.125), "-0.125", "negative float")
+eq(tostring(1e10), "1e+10", "large float")
+eq(tostring(1/0), "inf", "inf")
+eq(tostring(-1/0), "-inf", "-inf")
+eq(string.format("%.2f", 3.14159), "3.14", "%.2f")
+eq(string.format("%5.1f|", 2.26), "  2.3|", "%5.1f")
+eq(string.format("%d %x %X %05d %-4d|", 255, 255, 255, 42, 7), "255 ff FF 00042 7   |", "integers")
+eq(string.format("%s=%q", "a", "b\n"), 'a="b\\\n"', "%s %q")
+eq(string.format("%g %g", 0.0001, 123456), "0.0001 123456", "%g")
+eq(string.format("%e", 12345.678), "1.234568e+04", "%e")
+eq(string.format("%c%c", 72, 105), "Hi", "%c")
+-- text to numbers
+eq(tonumber("12"), 12, "tonumber int")
+eq(tonumber("2.5"), 2.5, "tonumber float")
+eq(tonumber("-1e3"), -1000.0, "tonumber exp")
+eq(tonumber("0x10"), 16, "tonumber hex")
+eq(tonumber(" 7 "), 7, "tonumber spaces")
+eq(tonumber("x"), nil, "tonumber bad")
+eq(math.type(3), "integer", "math.type int")
+eq(math.type(3.0), "float", "math.type float")
+eq(math.maxinteger, 2147483647, "32-bit integers")
+-- arithmetic and maths
+eq(7 // 2, 3, "floor division")
+eq(7 % 3, 1, "modulo")
+eq(-7 % 3, 2, "negative modulo")
+eq(2 ^ 10, 1024.0, "power")
+eq(math.floor(-2.5), -3, "floor")
+eq(math.ceil(2.1), 3, "ceil")
+eq(math.abs(-3), 3, "abs")
+eq(math.max(1, 5, 3), 5, "max")
+assert(math.abs(math.sin(math.pi / 2) - 1) < 1e-3, "sin")
+assert(math.abs(math.sqrt(2) - 1.41421) < 1e-3, "sqrt")
+assert(math.abs(math.log(math.exp(1)) - 1) < 1e-3, "log/exp")
+assert(math.abs(math.fmod(7.5, 2) - 1.5) < 1e-6, "fmod")
+for _ = 1, 100 do local r = math.random(1, 6); assert(r >= 1 and r <= 6, "random") end
+-- strings, tables, closures, coroutines, errors
+eq(("hello"):upper(), "HELLO", "upper")
+eq(("a,b,c"):gsub(",", ";"), "a;b;c", "gsub")
+eq(("key=val"):match("(%w+)=(%w+)"), "key", "match")
+local t = {5, 3, 9, 1}
+table.sort(t)
+eq(table.concat(t, " "), "1 3 5 9", "sort")
+local co = coroutine.wrap(function(a) local b = coroutine.yield(a + 1); return b * 2 end)
+eq(co(1), 2, "coroutine yield")
+eq(co(5), 10, "coroutine return")
+local ok, msg = pcall(function() error("boom") end)
+eq(ok, false, "pcall")
+assert(msg:find("boom"), "error message")
+eq(select("#", 1, nil, 3), 3, "select")
+eq(utf8.len("héllo"), 5, "utf8")
+eq(#string.pack("i4f", 1, 2.5), 8, "string.pack")
+local lib = require("helper")
+eq(lib.twice(21), 42, "require")
+-- the heap: many tables made and freed
+for i = 1, 2000 do local x = {i, tostring(i), {i}} end
+collectgarbage()
+passed = true
+function redraw()
+  screen.clear()
+  screen.level(15)
+  screen.text(12, 20, "selftest passed")
+  screen.update()
+end

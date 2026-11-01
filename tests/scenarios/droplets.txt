@@ -1,0 +1,81 @@
+# Ripple in the host simulator: the list, each droplet started, played and left, the sound, the memory.
+#   ./build.sh --host, then app/build/host/ripple_host tests/scenarios/droplets.txt OUTDIR
+wait 800
+expect mode 0
+expect droplets 3
+shot list.png
+# awake (the list in order: awake, beat, poly)
+tap PLAY
+wait 600
+expect mode 1
+expect currents 2
+expect route 2
+shot awake.png
+wav awake.wav
+wait 2500
+wavstop
+expect peak_db_min -40
+turn K1 10
+wait 100
+shot awake_tempo.png
+press HOME
+wait 1200
+release HOME
+wait 100
+expect mode 0
+expect currents 0
+# beat
+turn SELECT 1
+wait 50
+tap PLAY
+wait 400
+expect mode 1
+expect currents 1
+tap PLAY
+wav beat.wav
+wait 2000
+wavstop
+expect peak_db_min -40
+shot beat.png
+press HOME
+wait 1200
+release HOME
+wait 100
+# poly
+turn SELECT 1
+wait 50
+tap PLAY
+wait 400
+expect mode 1
+wav poly.wav
+key 7 down
+key 11 down
+key 14 down
+wait 400
+shot poly.png
+key 7 up
+key 11 up
+key 14 up
+wait 800
+wavstop
+expect peak_db_min -40
+turn K1 -20
+wait 50
+shot poly_cutoff.png
+expect peak_kb <100
+press HOME
+wait 1200
+release HOME
+wait 100
+expect mode 0
+# disk mode (the simulator has no computer: it waits), then HOME back to the list
+turn SELECT 1
+wait 50
+tap PLAY
+wait 200
+expect mode 3
+shot disk.png
+tap HOME
+wait 200
+expect mode 0
+expect droplets 3
