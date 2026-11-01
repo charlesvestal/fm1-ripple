@@ -61,6 +61,9 @@ builds the firmware with fm1-base (`base/`). `disk/` is the empty disk a new FM-
 ## Licences
 
 Ripple is MPL-2.0, on fm1-base and felucca-bsp (from Felucca by Leo Kuroshita, Hügelton Instruments). The SDK
-(`sdk/`), the shipped currents and droplets are MIT. Lua 5.4 is MIT (Lua.org, PUC-Rio), with the changes listed in
+(`sdk/`), the built-in currents and droplets are MIT. Lua 5.4 is MIT (Lua.org, PUC-Rio), with the changes listed in
 `app/third_party/lua-5.4.7/PATCHES.md`. Currents are written in Faust (GRAME); the code Faust generates is the
-current's own.
+current's own. For details, see [LICENSING.md](LICENSING.md).
+
+Ripple needs fm1-base's disk mode and code window, in review as charlesvestal/fm1-base#32 and
+hugelton/felucca-bsp#25; until they merge, `base/` follows their branches.
