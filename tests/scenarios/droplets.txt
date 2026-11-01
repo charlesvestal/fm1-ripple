@@ -2,7 +2,7 @@
 #   ./build.sh --host, then app/build/host/ripple_host tests/scenarios/droplets.txt OUTDIR
 wait 800
 expect mode 0
-expect droplets 3
+expect droplets 4
 shot list.png
 # awake (the list in order: awake, beat, poly)
 tap PLAY
@@ -62,12 +62,44 @@ expect peak_db_min -40
 turn K1 -20
 wait 50
 shot poly_cutoff.png
+expect arena_kb <84
+turn ALGO 1
+wait 50
+peakreset
+key 9 down
+wait 300
+key 9 up
+wait 100
+expect peak_db_min -40
+expect error 0
+shot poly_fm.png
 expect peak_kb <100
 press HOME
 wait 1200
 release HOME
 wait 100
 expect mode 0
+# rain: plucks into the reverb, by itself; SAVE keeps its knobs (data/RAIN.DAT)
+turn SELECT 1
+wait 50
+tap PLAY
+wait 400
+expect error 0
+expect mode 1
+expect currents 2
+wav rain.wav
+wait 3000
+wavstop
+expect peak_db_min -50
+turn K2 10
+tap SAVE
+wait 300
+expect error 0
+shot rain.png
+press HOME
+wait 1200
+release HOME
+wait 100
 # disk mode (the simulator has no computer: it waits), then HOME back to the list
 turn SELECT 1
 wait 50
@@ -78,4 +110,4 @@ shot disk.png
 tap HOME
 wait 200
 expect mode 0
-expect droplets 3
+expect droplets 4

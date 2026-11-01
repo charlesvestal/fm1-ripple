@@ -1,6 +1,6 @@
 -- beat: a 16-step drum machine on the drums current.
 -- The white keys are the 16 steps; ALGORITHM picks the drum (kick, snare, hat). PLAY starts and stops.
--- K1 tempo, K2 tune, K3 decay, K4 snap.
+-- K1 tempo, K2 tune, K3 decay, K4 snap. SAVE keeps the pattern and the knobs for next time.
 
 local drums
 local names = {"kick", "snare", "hat"}
@@ -18,6 +18,13 @@ function init()
   pattern[2][5], pattern[2][13] = true, true
   for s = 1, 16, 2 do pattern[3][s] = true end
   clock.set_tempo(112)
+  local saved = data.load()
+  if saved and saved.pattern then
+    pattern = saved.pattern
+    clock.set_tempo(saved.tempo or 112)
+    tune, decay, snap = saved.tune or tune, saved.decay or decay, saved.snap or snap
+    drums:set("tune", tune); drums:set("decay", decay); drums:set("snap", snap)
+  end
   clock.run(function()
     while true do
       clock.sync(1 / 4)
@@ -52,6 +59,9 @@ end
 function button(name, z)
   if z == 0 then return end
   if name == "PLAY" then playing = not playing; step = 0 end
+  if name == "SAVE" then
+    data.save({pattern = pattern, tempo = clock.tempo, tune = tune, decay = decay, snap = snap})
+  end
   lights()
   redraw()
 end

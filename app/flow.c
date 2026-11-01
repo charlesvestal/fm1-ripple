@@ -70,6 +70,7 @@ static uint32_t ncurs;
 static uint8_t arena[FLOW_ARENA_KB * 1024u] PLAT_POOL __attribute__((aligned(8)));
 static uint32_t arena_top;
 static volatile uint8_t route[FLOW_MAX], route_n;   /* the order on the bus (indexes into curs) */
+static uint8_t route_set_n;                 /* what the droplet set (a pause sets route_n 0 a moment) */
 static volatile float flow_gain = 0.5f;     /* the droplet's level */
 static volatile uint32_t flow_blocks;       /* blocks rendered (a reset waits for one) */
 static float flow_peak;                     /* the last block's peak (the meter) */
@@ -119,6 +120,7 @@ static void flow_reset(void)
     }
 #endif
     evq_r = evq_w;
+    route_set_n = 0;
     ncurs = 0;
     arena_top = 0;
     memset(curs, 0, sizeof curs);
@@ -289,8 +291,11 @@ static void flow_route(const int *hs, int n)
     route_n = 0;                            /* the render sees no flow while it changes */
     for (i = 0; i < k; i++)
         route[i] = r[i];
+    route_set_n = (uint8_t)k;
     route_n = (uint8_t)k;
 }
+
+static void flow_route_restore(void) { route_n = route_set_n; }
 
 /* --------------------------------------------------------------- the render --- */
 static float bus_l[APP_BLOCK], bus_r[APP_BLOCK];

@@ -47,6 +47,8 @@ void rp_led_button(int b, int on);
 int rp_button_index(const char *name);      /* "PLAY" -> B_PLAY, -1 none */
 const char *rp_button_name(int b);
 uint32_t rp_ms(void);
+int rp_data_write(const char *s, size_t n);  /* the droplet's file (/data/NAME.DAT): 0 = written */
+int rp_data_read(char *d, size_t max);       /* its bytes (at most max), or -1 none */
 void rp_print(const char *s, size_t n);     /* print: the console */
 void rp_crumb(uint32_t step, const char *what);   /* where a start got to (kept through a watchdog reset) */
 

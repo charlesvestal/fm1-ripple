@@ -155,6 +155,22 @@ static int led_button(lua_State *L)
     rp_led_button(b, lua_toboolean(L, 2));
     return 0;
 }
+static int d_write(lua_State *L)
+{
+    size_t n;
+    const char *s = luaL_checklstring(L, 1, &n);
+    lua_pushboolean(L, rp_data_write(s, n) == 0);
+    return 1;
+}
+static int d_read(lua_State *L)
+{
+    static char b[8192];
+    int n = rp_data_read(b, sizeof b);
+    if (n < 0)
+        return 0;
+    lua_pushlstring(L, b, (size_t)n);
+    return 1;
+}
 static int u_ms(lua_State *L) { lua_pushinteger(L, (lua_Integer)(rp_ms() & 0x7FFFFFFFu)); return 1; }
 static int u_note(lua_State *L) { lua_pushinteger(L, 53 + luaL_checkinteger(L, 1)); return 1; }
 
@@ -190,6 +206,37 @@ static const char PRELUDE[] =
     "  local n = 0\n"
     "  for id, j in pairs(jobs) do if j.wake <= ms then n = n + 1; due_list[n] = id end end\n"
     "  for i = 1, n do local id = due_list[i]; due_list[i] = nil; local j = jobs[id]; if j then step(id, j) end end\n"
+    "end\n"
+    "data = {}\n"
+    "local function ser(v, out, d)\n"
+    "  local t = type(v)\n"
+    "  if t == 'number' or t == 'boolean' then out[#out + 1] = tostring(v)\n"
+    "  elseif t == 'string' then out[#out + 1] = string.format('%q', v)\n"
+    "  elseif t == 'table' and d < 8 then\n"
+    "    out[#out + 1] = '{'\n"
+    "    for k, x in pairs(v) do\n"
+    "      local tk, tx = type(k), type(x)\n"
+    "      if (tk == 'number' or tk == 'string') and tx ~= 'function' and tx ~= 'userdata' and tx ~= 'thread' then\n"
+    "        out[#out + 1] = '['; ser(k, out, d + 1); out[#out + 1] = ']='; ser(x, out, d + 1); out[#out + 1] = ','\n"
+    "      end\n"
+    "    end\n"
+    "    out[#out + 1] = '}'\n"
+    "  else out[#out + 1] = 'nil' end\n"
+    "end\n"
+    "function data.save(t)\n"
+    "  local out = {'return '}\n"
+    "  ser(t, out, 0)\n"
+    "  local s = table.concat(out)\n"
+    "  if #s > 8192 then error('data.save: more than 8 KB', 2) end\n"
+    "  return _data_write(s)\n"
+    "end\n"
+    "function data.load()\n"
+    "  local s = _data_read()\n"
+    "  if not s then return nil end\n"
+    "  local f = load(s, '=data', 't', {})\n"
+    "  if not f then return nil end\n"
+    "  local ok, t = pcall(f)\n"
+    "  return ok and t or nil\n"
     "end\n"
     "function util.clamp(x, a, b) return math.max(a, math.min(b, x)) end\n"
     "function util.round(x) return math.floor(x + 0.5) end\n"
@@ -299,6 +346,8 @@ int lr_start(const char *path)
     lua_pushcfunction(LS, u_note);
     lua_setfield(LS, -2, "note");
     lua_setglobal(LS, "util");
+    lua_register(LS, "_data_write", d_write);
+    lua_register(LS, "_data_read", d_read);
     rp_crumb(6, "prelude");
     if (luaL_loadbuffer(LS, PRELUDE, sizeof PRELUDE - 1u, "=prelude") != LUA_OK || lr_pcall(0) != 0) {
         if (!lr_err[0])

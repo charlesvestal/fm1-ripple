@@ -1,6 +1,6 @@
 -- awake: a melody that wanders a scale on its own (after norns's awake).
 -- K1 tempo, K2 how far it wanders, K3 how often it rests, K4 the filter.
--- PLAY stops and starts it. The keys play along.
+-- PLAY stops and starts it; SAVE keeps the knobs for next time. The keys play along.
 
 local voice, delay
 local scale = {0, 2, 3, 5, 7, 9, 10}
@@ -24,6 +24,12 @@ function init()
   flow.set(voice, delay)
   for i = 1, 16 do steps[i] = 0 end
   clock.set_tempo(96)
+  local saved = data.load()
+  if saved then
+    clock.set_tempo(saved.tempo or 96)
+    wander, rest, cutoff = saved.wander or wander, saved.rest or rest, saved.cutoff or cutoff
+    voice:set("cutoff", cutoff)
+  end
   clock.run(function()
     while true do
       clock.sync(1 / 4)
@@ -49,6 +55,9 @@ function key(k, vel)
 end
 
 function button(name, z)
+  if name == "SAVE" and z == 1 then
+    data.save({tempo = clock.tempo, wander = wander, rest = rest, cutoff = cutoff})
+  end
   if name == "PLAY" and z == 1 then
     playing = not playing
     if not playing and last then voice:note(last, 0); last = nil end

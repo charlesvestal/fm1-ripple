@@ -130,6 +130,49 @@ const char *rp_button_name(int b) { return b >= 0 && b < NB ? BTN_NAME[b] : "?";
 uint32_t rp_ms(void) { return plat_ms(); }
 void rp_crumb(uint32_t step, const char *what) { crumb_set(step, what); }
 
+/* the running droplet's data file: its name in 8.3, from the droplet's ("awake.lua" -> AWAKE.DAT) */
+static char run_name[40];
+static void data_name(char *n83)
+{
+    uint32_t i, k = 0;
+    memset(n83, ' ', 11u);
+    for (i = 0; run_name[i] && run_name[i] != '.' && k < 8u; i++) {
+        char c = run_name[i];
+        if (c >= 'a' && c <= 'z')
+            c = (char)(c - 32);
+        if ((c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' || c == '-')
+            n83[k++] = c;
+    }
+    if (!k)
+        n83[k++] = 'X';
+    n83[8] = 'D';
+    n83[9] = 'A';
+    n83[10] = 'T';
+}
+int rp_data_write(const char *s, size_t n)
+{
+    char n83[11];
+    int rc;
+    data_name(n83);
+    route_n = 0;                             /* (the sound pauses while the flash is written) */
+    rc = disk_write_file("/data", n83, s, (uint32_t)n);
+    flow_route_restore();
+    return rc;
+}
+int rp_data_read(char *d, size_t max)
+{
+    char n83[11], path[24] = "/data/";
+    disk_file_t f;
+    uint32_t i, k = 6;
+    data_name(n83);
+    for (i = 0; i < 8u && n83[i] != ' '; i++)
+        path[k++] = n83[i];
+    memcpy(path + k, ".DAT", 5u);
+    if (disk_open(path, &f) != 0 || f.dir)
+        return -1;
+    return (int)disk_read(&f, 0, d, (uint32_t)(f.size < max ? f.size : max));
+}
+
 /* ------------------------------------------------------------- the sound --- */
 void app_render(int32_t *lr, uint32_t n, uint32_t master_q12) { flow_render(lr, n, master_q12); }
 void app_panic(void) { route_n = 0; }
@@ -252,6 +295,7 @@ static void start(int i)
     con[0][0] = 0;
     led_btn = led_key_bits = 0;
     stem(ui.names[i], t);
+    strcpy(run_name, ui.names[i]);
     crumb_set(3, ui.names[i]);
     if (lr_start(path) != 0) {
         flow_reset();

@@ -8,12 +8,23 @@
 
 static struct {
     uint32_t fat_lba, root_lba, root_n, data_lba, nclusters, spc;   /* in sectors; spc: sectors a cluster */
+    uint32_t nfat, spf;                     /* the FATs: how many, sectors each */
     uint8_t ok;
 } dk;
 
+/* writes (disk mode's, a droplet's file) go through one 4 KB flash sector held in RAM: what reads it sees it */
+static uint8_t blk[4096] PLAT_POOL;
+static int32_t wc_off = -1;                 /* the sector held (offset from DISK_LO), -1 none */
+static uint8_t wc_dirty;
+
 const uint8_t *disk_sector(uint32_t lba)
 {
-    return lba < DISK_SECTORS ? plat_data(DISK_LO + lba * 512u) : 0;
+    uint32_t off = lba * 512u;
+    if (lba >= DISK_SECTORS)
+        return 0;
+    if ((int32_t)(off & ~4095u) == wc_off)
+        return blk + (off & 4095u);
+    return plat_data(DISK_LO + off);
 }
 
 static uint16_t rd16(const uint8_t *p) { return (uint16_t)(p[0] | p[1] << 8); }
@@ -35,6 +46,8 @@ static void disk_mount(void)
     spf = rd16(b + 22);
     if (bps != 512u || !dk.spc || !nfat || !spf || tot > DISK_SECTORS)
         return;
+    dk.nfat = nfat;
+    dk.spf = spf;
     dk.fat_lba = rsv;
     dk.root_lba = rsv + nfat * spf;
     dk.root_n = (nroot * 32u + 511u) / 512u;
@@ -65,12 +78,12 @@ static uint32_t fat_next(uint32_t c)
 
 static int cl_ok(uint32_t c) { return c >= 2u && c < dk.nclusters + 2u; }
 
-/* sector k of a chain (the root directory when cluster 0): 0 past the end */
-static const uint8_t *chain_sector(uint32_t cluster, uint32_t k)
+/* sector k of a chain (the root directory when cluster 0): its number, 0 past the end (sector 0 is never in one) */
+static uint32_t chain_lba(uint32_t cluster, uint32_t k)
 {
     uint32_t hops;
     if (!cluster)
-        return k < dk.root_n ? disk_sector(dk.root_lba + k) : 0;
+        return k < dk.root_n ? dk.root_lba + k : 0;
     for (hops = k / dk.spc; hops; hops--) {
         if (!cl_ok(cluster))
             return 0;
@@ -78,7 +91,12 @@ static const uint8_t *chain_sector(uint32_t cluster, uint32_t k)
     }
     if (!cl_ok(cluster))
         return 0;
-    return disk_sector(dk.data_lba + (cluster - 2u) * dk.spc + k % dk.spc);
+    return dk.data_lba + (cluster - 2u) * dk.spc + k % dk.spc;
+}
+static const uint8_t *chain_sector(uint32_t cluster, uint32_t k)
+{
+    uint32_t lba = chain_lba(cluster, k);
+    return lba ? disk_sector(lba) : 0;
 }
 
 uint32_t disk_read(const disk_file_t *f, uint32_t off, void *dst, uint32_t n)
@@ -279,12 +297,8 @@ int disk_entry(const char *path, int i, char *name, int max, disk_file_t *f)
 }
 
 /* ------------------------------------------------------------ disk mode --- */
-/* the computer's blocks: read in place, written through one 4 KB flash sector held in RAM (a write to another sector,
- * a sync, an eject or a pause writes it back: one erase for eight blocks) */
-static uint8_t blk[4096] PLAT_POOL;
-static int32_t wc_off = -1;                 /* the sector held (offset from DISK_LO), -1 none */
-static uint8_t wc_dirty;
-
+/* the computer's blocks: read in place, written through the 4 KB sector held in RAM (a write to another sector, a
+ * sync, an eject or a pause writes it back: one erase for eight blocks) */
 static void wc_flush(void)
 {
     if (wc_off < 0 || !wc_dirty)
@@ -296,15 +310,7 @@ static void wc_flush(void)
     wc_dirty = 0;
 }
 
-static const uint8_t *dm_read(uint32_t lba)
-{
-    uint32_t off = lba * 512u;
-    if (lba >= DISK_SECTORS)
-        return 0;
-    if ((int32_t)(off & ~4095u) == wc_off)
-        return blk + (off & 4095u);
-    return disk_sector(lba);
-}
+static const uint8_t *dm_read(uint32_t lba) { return disk_sector(lba); }
 
 static int dm_write(uint32_t lba, const uint8_t *b)
 {
@@ -325,6 +331,117 @@ static void dm_flush(void)
 {
     wc_flush();
     wc_off = -1;
+}
+
+/* ------------------------------------------------------- a droplet's file --- */
+static void fat_set(uint32_t c, uint32_t v)  /* entry c in every FAT (12 bits, maybe across two sectors) */
+{
+    uint32_t f, off = c + c / 2u, k;
+    for (f = 0; f < dk.nfat; f++)
+        for (k = 0; k < 2u; k++) {         /* its two bytes, each in its sector */
+            uint32_t at = off + k, lba = dk.fat_lba + f * dk.spf + at / 512u;
+            uint8_t sec[512];
+            const uint8_t *s = disk_sector(lba);
+            if (!s)
+                return;
+            memcpy(sec, s, 512u);
+            if (k == 0)
+                sec[at % 512u] = c & 1u ? (uint8_t)((sec[at % 512u] & 0x0Fu) | (v & 0x0Fu) << 4) : (uint8_t)v;
+            else
+                sec[at % 512u] = c & 1u ? (uint8_t)(v >> 4) : (uint8_t)((sec[at % 512u] & 0xF0u) | (v >> 8 & 0x0Fu));
+            dm_write(lba, sec);
+        }
+}
+
+/* name83: 11 bytes, space padded ("AWAKE   DAT"); the file in directory dir replaced by data (n bytes): 0 = written,
+ * -1 no such directory, -2 the directory is full, -3 the disk is full */
+static int disk_write_file(const char *dir, const char *name83, const void *data, uint32_t n)
+{
+    disk_file_t d;
+    uint32_t k, j, cl_bytes, need, c, prev = 0, first = 0, got = 0, slot_lba = 0, slot_at = 0, i;
+    int found = 0;
+    const uint8_t *s;
+    uint8_t sec[512];
+    if (disk_open(dir, &d) != 0 || !d.dir)
+        return -1;
+    for (k = 0; !found; k++) {              /* its entry, or the first free one */
+        uint32_t lba = chain_lba(d.cluster, k);
+        int end = 0;
+        if (!lba || !(s = disk_sector(lba)))
+            break;
+        for (j = 0; j < 512u; j += 32u) {
+            const uint8_t *e = s + j;
+            if (e[0] != 0 && e[0] != 0xE5 && (e[11] & 0x3Fu) != 0x0Fu && !memcmp(e, name83, 11u)) {
+                slot_lba = lba;
+                slot_at = j;
+                found = 1;
+                break;
+            }
+            if ((e[0] == 0 || e[0] == 0xE5) && !slot_lba) {
+                slot_lba = lba;
+                slot_at = j;
+            }
+            if (e[0] == 0) {
+                end = 1;
+                break;
+            }
+        }
+        if (end)
+            break;
+    }
+    if (!slot_lba)
+        return -2;
+    if (found) {                            /* its old clusters free again */
+        c = rd16(disk_sector(slot_lba) + slot_at + 26);
+        while (cl_ok(c)) {
+            uint32_t nx = fat_next(c);
+            fat_set(c, 0);
+            c = nx;
+        }
+    }
+    cl_bytes = dk.spc * 512u;
+    need = (n + cl_bytes - 1u) / cl_bytes;
+    for (c = 2; got < need && c < dk.nclusters + 2u; c++) {   /* free clusters, linked */
+        if (fat_next(c) != 0)
+            continue;
+        fat_set(c, 0xFFFu);
+        if (prev)
+            fat_set(prev, c);
+        else
+            first = c;
+        prev = c;
+        for (i = 0; i < dk.spc; i++) {     /* its sectors */
+            uint32_t at = got * cl_bytes + i * 512u, m = at < n ? (n - at > 512u ? 512u : n - at) : 0;
+            memset(sec, 0, sizeof sec);
+            if (m)
+                memcpy(sec, (const uint8_t *)data + at, m);
+            dm_write(dk.data_lba + (c - 2u) * dk.spc + i, sec);
+        }
+        got++;
+    }
+    if (got < need) {                       /* full: give back what was taken */
+        c = first;
+        while (cl_ok(c)) {
+            uint32_t nx = fat_next(c);
+            fat_set(c, 0);
+            c = nx;
+        }
+        dm_flush();
+        return -3;
+    }
+    memcpy(sec, disk_sector(slot_lba), 512u);   /* the entry: name, a file, its first cluster and size */
+    memcpy(sec + slot_at, name83, 11u);
+    sec[slot_at + 11] = 0x20;
+    memset(sec + slot_at + 12, 0, 14u);
+    sec[slot_at + 26] = (uint8_t)first;
+    sec[slot_at + 27] = (uint8_t)(first >> 8);
+    sec[slot_at + 28] = (uint8_t)n;
+    sec[slot_at + 29] = (uint8_t)(n >> 8);
+    sec[slot_at + 30] = (uint8_t)(n >> 16);
+    sec[slot_at + 31] = (uint8_t)(n >> 24);
+    dm_write(slot_lba, sec);
+    dm_flush();
+    return 0;
 }
 
 static const plat_disk_t DISK_MODE = {DISK_SECTORS, dm_read, dm_write, dm_flush, "Ripple", "FM-1 disk"};

@@ -20,7 +20,11 @@ The shipped droplets:
 - awake: a melody that wanders a scale on its own. K1 tempo, K2 how far it wanders, K3 how often it rests, K4 the
   filter; PLAY stops and starts it.
 - beat: a 16-step drum machine. The white keys are the steps, ALGORITHM picks the drum, PLAY starts and stops it.
-- poly: the keys play a six-voice synth through a delay. K1 to K4 set cutoff, resonance, delay time and feedback.
+- poly: the keys play a six-voice synth through a delay. K1 to K4 set cutoff, resonance, delay time and feedback;
+  ALGORITHM switches between the saw synth and FM.
+- rain: plucked notes falling on a scale into a reverb, and the keys play along.
+
+awake, beat and rain keep their settings when you press SAVE (beat its pattern too).
 
 ## Writing your own
 

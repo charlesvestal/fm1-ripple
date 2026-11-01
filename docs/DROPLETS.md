@@ -72,6 +72,12 @@ The currents on the shipped disk:
 | `voice` | Six voices of two saws through a lowpass filter: `cutoff`, `res`, `detune`, `attack`, `release`, `envamt` |
 | `delay` | A delay of up to 0.36 seconds: `time`, `feedback`, `tone`, `mix` |
 | `drums` | Kick (note 36), snare (38), closed hat (42), open hat (46): `tune`, `decay`, `snap`, `level` |
+| `fm` | Six voices of two-operator FM, bright at the start and settling: `ratio`, `index`, `fall`, `floor`, `feedback`, `attack`, `release` |
+| `pluck` | Six plucked strings, from 56 Hz up: `damp`, `decay`, `bright` |
+| `plate` | A small reverb: `size`, `decay`, `damp`, `mix` |
+
+All of a droplet's currents share 84 KB. The delay takes 66 KB of it and the plate 36 KB, so a droplet can have one
+of them, with a voice or two.
 
 To write your own, see [the SDK](../sdk/README.md).
 
@@ -115,6 +121,26 @@ end)
 | `clock.cancel(id)` | Stops a clock |
 | `clock.set_tempo(bpm)`, `clock.tempo` | The tempo, 20 to 300 |
 | `clock.beats()` | Beats since Ripple started |
+
+## Saving
+
+`data.save(t)` writes table `t` to the droplet's own file on the disk (`data/NAME.DAT`, named after the droplet), and
+`data.load()` reads it back, or gives `nil` when there is none. Numbers, strings, booleans and tables of them are
+kept, up to 8 KB. The sound pauses for a moment while the flash is written, so save when asked (SAVE is the obvious
+button), not on every knob turn.
+
+```lua
+function init()
+  local saved = data.load()
+  if saved then tempo = saved.tempo end
+end
+
+function button(name, z)
+  if name == "SAVE" and z == 1 then data.save({tempo = tempo}) end
+end
+```
+
+In disk mode the files are in `data`: delete one to give its droplet its defaults back.
 
 ## Lights, MIDI and helpers
 
