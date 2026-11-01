@@ -10,6 +10,9 @@ play a drum machine's pattern in another, through the same delay.
 
 Inspired by monome's norns: Lua scripts over compiled sound engines.
 
+**[Try it in the browser, install it and read the manual](https://charlesvestal.github.io/fm1-ripple)** on Ripple's
+site. The latest release is on [GitHub](https://github.com/charlesvestal/fm1-ripple/releases/latest).
+
 ## On the FM-1
 
 The list shows the droplets: the ones built into Ripple (an outlined mark) and yours on the disk (a filled one).
