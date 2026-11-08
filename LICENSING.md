@@ -14,10 +14,11 @@
 | heavylib (`sdk/heavy/heavylib/`) | MIT, Copyright (c) 2015 Enzien Audio Ltd. (`sdk/heavy/heavylib/LICENSE`): Wasted Audio's heavylib, its abstractions without their help patches |
 | The MIDI effects engine (`app/midifx/`) | MIT: from e16-launcher (github.com/charlesvestal/e16-launcher, apps/midifx/core), its sizes and 64-bit multiplies changed for the FM-1 |
 
-A current or a droplet you write may use any licence: the SDK's header and tools are MIT, and the C that Faust
-generates from your `.dsp`, and Heavy from your `.pd`, is yours. Heavy's compiler (hvcc) is GPL-3.0, but only its
-output is in Ripple: the runtime under ISC, and the code made from a patch under the patch's own copyright, which
-`sdk/tools/currents.py` takes from the `LICENSE` beside the patch. The kept Faust output in `currents/gen/` (the C and Faust's
-JSON description) is generated from this repository's `.dsp` files. Nothing generated from a Pd patch is committed.
+A current or a droplet you write can use any license you like. The SDK's header and tools are MIT, and the C that
+Faust generates from your `.dsp`, or Heavy from your `.pd`, is yours. Heavy's compiler (hvcc) is GPL-3.0, but only
+its output is in Ripple. That output is the runtime, under ISC, and the code made from each patch, under the patch's
+own copyright, which `sdk/tools/currents.py` takes from the `LICENSE` beside the patch. The Faust output kept in
+`currents/gen/` (the C and Faust's JSON description) is generated from this repository's `.dsp` files. Nothing
+generated from a Pd patch is committed.
 
 Ripple is not affiliated with M-VAVE or monome. M-VAVE and FM-1 are trademarks of their owners; norns is monome's.

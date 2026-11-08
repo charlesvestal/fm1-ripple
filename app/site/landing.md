@@ -1,24 +1,26 @@
 # Ripple
 
-Ripple turns the M-VAVE FM-1 into an instrument you can reprogram without reflashing. Droplets, small programs in
-Lua, are its instruments: twelve are built in, from a drum machine to generative bells, a looper and the Game of
-Life. Their sounds are currents, written in Faust, Pd or C, and any droplet can load any currents and chain them as
-it likes: the same voices, drums and effects, recombined into new instruments in a few lines of Lua. To add your
-own, put the FM-1 in disk mode: it shows up on your computer as a USB drive, and you copy files onto it.
+Ripple turns the M-VAVE FM-1 into an instrument you can reprogram without reflashing. Its instruments are
+droplets, which are small programs written in Lua. Fifteen are built in, from a drum machine to generative bells, a
+looper and the Game of Life. Droplets make their sounds with currents, which are written in Faust, Pd or C. Any droplet can
+load any currents and chain them as it likes, so you can recombine the same voices, drums and effects into a new
+instrument in a few lines of Lua. To add your own, put the FM-1 in disk mode. It shows up on your computer as a USB
+drive, and you copy your files onto it.
 
 ![Ripple's list of droplets on the FM-1's screen](manual/img/list.png "Ripple")
 
-Version {{VERSION}}. Installing is at your own risk; the installer can put M-VAVE's own firmware back.
+This is version {{VERSION}}. You install it at your own risk, and the installer can put M-VAVE's own firmware back.
 
-- [Try it in the browser](emu/): the same code the FM-1 runs, with sound. No FM-1 needed.
-- [Install](install/): from Chrome or Edge, with the FM-1 connected by USB.
-- [Manual](manual/): the list, the twelve droplets, disk mode, saving.
-- [Writing droplets](https://github.com/charlesvestal/fm1-ripple/blob/main/docs/DROPLETS.md): the Lua API.
-- [Writing currents](https://github.com/charlesvestal/fm1-ripple/blob/main/sdk/README.md): Faust, Pd or C, and the SDK.
-- [Download {{PKG}}](firmware/{{PKG}}): for the command-line installer, `python3 tools/fm1_install.py {{PKG}}`.
-- [Source](https://github.com/charlesvestal/fm1-ripple): MPL-2.0; the SDK and the droplets MIT. Built on fm1-base
-  and felucca-bsp, from Felucca by Leo Kuroshita, Hügelton Instruments. Lua 5.4 by Lua.org, PUC-Rio. Currents in
-  Faust, by GRAME, and in Pd, compiled by [hvcc](https://github.com/Wasted-Audio/hvcc): Wasted Audio's
-  continuation of Enzien Audio's Heavy. Inspired by monome's norns.
+- [Try it in the browser](emu/). It runs the same code as the FM-1, with sound, and you don't need an FM-1.
+- [Install](install/) from Chrome or Edge, with the FM-1 connected by USB.
+- Read the [manual](manual/) to learn the list, the fifteen droplets, disk mode and saving.
+- To write your own droplets, see [Writing droplets](https://github.com/charlesvestal/fm1-ripple/blob/main/docs/DROPLETS.md) for the Lua API.
+- To write your own currents in Faust, Pd or C, see [Writing currents](https://github.com/charlesvestal/fm1-ripple/blob/main/sdk/README.md) for the SDK.
+- [Download {{PKG}}](firmware/{{PKG}}) to install from a terminal: `python3 tools/fm1_install.py {{PKG}}`.
+- The [source](https://github.com/charlesvestal/fm1-ripple) is under MPL-2.0, and the SDK and the droplets are
+  under MIT. Ripple is built on fm1-base and felucca-bsp, which come from Felucca by Leo Kuroshita, Hügelton
+  Instruments. It uses Lua 5.4 by Lua.org, PUC-Rio. Currents are written in Faust, by GRAME, or in Pd, compiled by
+  [hvcc](https://github.com/Wasted-Audio/hvcc), which Wasted Audio continues from Enzien Audio's Heavy. Ripple is
+  inspired by monome's norns.
 
 M-VAVE and FM-1 are trademarks of their owners. Ripple is not affiliated with M-VAVE or monome.
