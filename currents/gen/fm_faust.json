@@ -1,0 +1,179 @@
+{
+	"name": "fm",
+	"filename": "fm.dsp",
+	"version": "2.83.1",
+	"compile_options": "-lang c -fpga-mem-th 4 -ct 1 -cn rc_fm -es 1 -mcd 16 -mdd 1024 -mdy 33 -single -ftz 0",
+	"size": 120,
+	"inputs": 0,
+	"outputs": 2,
+	"meta": [
+		{
+			"compile_options": "-lang c -fpga-mem-th 4 -ct 1 -cn rc_fm -es 1 -mcd 16 -mdd 1024 -mdy 33 -single -ftz 0"
+		},
+		{
+			"envelopes.lib/adsr:author": "Yann Orlarey and Andrey Bundin"
+		},
+		{
+			"envelopes.lib/ar:author": "Yann Orlarey, St\u00e9phane Letz"
+		},
+		{
+			"envelopes.lib/author": "GRAME"
+		},
+		{
+			"envelopes.lib/copyright": "GRAME"
+		},
+		{
+			"envelopes.lib/license": "LGPL with exception"
+		},
+		{
+			"envelopes.lib/name": "Faust Envelope Library"
+		},
+		{
+			"envelopes.lib/version": "1.3.0"
+		},
+		{
+			"filename": "fm.dsp"
+		},
+		{
+			"maths.lib/author": "GRAME"
+		},
+		{
+			"maths.lib/copyright": "GRAME"
+		},
+		{
+			"maths.lib/license": "LGPL with exception"
+		},
+		{
+			"maths.lib/name": "Faust Math Library"
+		},
+		{
+			"maths.lib/version": "2.9.0"
+		},
+		{
+			"name": "fm"
+		},
+		{
+			"platform.lib/name": "Generic Platform Library"
+		},
+		{
+			"platform.lib/version": "1.3.0"
+		},
+		{
+			"voices": "6"
+		}
+	],
+	"ui": [
+		{
+			"type": "vgroup",
+			"label": "fm",
+			"items": [
+				{
+					"type": "hslider",
+					"label": "attack",
+					"varname": "fHslider7",
+					"shortname": "attack",
+					"address": "/fm/attack",
+					"init": 0.003,
+					"min": 0.001,
+					"max": 2,
+					"step": 0.001
+				},
+				{
+					"type": "hslider",
+					"label": "fall",
+					"varname": "fHslider6",
+					"shortname": "fall",
+					"address": "/fm/fall",
+					"init": 0.4,
+					"min": 0.01,
+					"max": 4,
+					"step": 0.01
+				},
+				{
+					"type": "hslider",
+					"label": "feedback",
+					"varname": "fHslider4",
+					"shortname": "feedback",
+					"address": "/fm/feedback",
+					"init": 0,
+					"min": 0,
+					"max": 1,
+					"step": 0.01
+				},
+				{
+					"type": "hslider",
+					"label": "floor",
+					"varname": "fHslider5",
+					"shortname": "floor",
+					"address": "/fm/floor",
+					"init": 0.2,
+					"min": 0,
+					"max": 1,
+					"step": 0.01
+				},
+				{
+					"type": "hslider",
+					"label": "freq",
+					"varname": "fHslider1",
+					"shortname": "freq",
+					"address": "/fm/freq",
+					"init": 440,
+					"min": 20,
+					"max": 8000,
+					"step": 0.01
+				},
+				{
+					"type": "hslider",
+					"label": "gain",
+					"varname": "fHslider0",
+					"shortname": "gain",
+					"address": "/fm/gain",
+					"init": 0.5,
+					"min": 0,
+					"max": 1,
+					"step": 0.01
+				},
+				{
+					"type": "button",
+					"label": "gate",
+					"varname": "fButton0",
+					"shortname": "gate",
+					"address": "/fm/gate"
+				},
+				{
+					"type": "hslider",
+					"label": "index",
+					"varname": "fHslider2",
+					"shortname": "index",
+					"address": "/fm/index",
+					"init": 3,
+					"min": 0,
+					"max": 12,
+					"step": 0.01
+				},
+				{
+					"type": "hslider",
+					"label": "ratio",
+					"varname": "fHslider3",
+					"shortname": "ratio",
+					"address": "/fm/ratio",
+					"init": 2,
+					"min": 0.5,
+					"max": 8,
+					"step": 0.5
+				},
+				{
+					"type": "hslider",
+					"label": "release",
+					"varname": "fHslider8",
+					"shortname": "release",
+					"address": "/fm/release",
+					"init": 0.6,
+					"min": 0.01,
+					"max": 6,
+					"step": 0.01
+				}
+			]
+		}
+	]
+}

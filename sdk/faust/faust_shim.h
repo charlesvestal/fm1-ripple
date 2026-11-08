@@ -2,7 +2,7 @@
  * Copyright (C) 2026 Charles Vestal */
 /* What Faust's C output (faust -lang c -single) needs, for a Ripple current: its maths from fastmath.h (no libm on
  * the FM-1), no allocation (the firmware hands the state), and the UI glue types the generated code calls through.
- * sdk/tools/faust2cur.py puts this in place of the generated file's <math.h> and <stdlib.h>. */
+ * sdk/tools/currents.py puts this in place of the generated file's <math.h> and <stdlib.h>. */
 #ifndef RIPPLE_FAUST_SHIM_H
 #define RIPPLE_FAUST_SHIM_H
 #include <stdint.h>

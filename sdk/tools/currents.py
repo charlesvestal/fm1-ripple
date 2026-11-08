@@ -79,57 +79,70 @@ def lang(f):
     return CXXFLAGS if Path(f).suffix in (".cc", ".cpp") else []
 
 # ------------------------------------------------------------------ Faust ---
-UI_RE = re.compile(r'ui_interface->(addHorizontalSlider|addVerticalSlider|addNumEntry|addButton|addCheckButton)\('
-                   r'ui_interface->uiInterface, "([^"]*)", &dsp->(\w+)(?:, \(FAUSTFLOAT\)([^,]+), \(FAUSTFLOAT\)([^,]+), '
-                   r'\(FAUSTFLOAT\)([^,]+), \(FAUSTFLOAT\)([^)]+))?\);')
+FAUST_JSON_LOCAL = ("library_list", "include_pathnames")   # (where this machine's Faust found its files: not kept)
 
 
-def fnum(s):
-    return float(s.strip().rstrip("f"))
+def faust_widgets(ui):
+    """the widgets in Faust's JSON ui tree, in Faust's UI order (buildUserInterface's): (label, field, default, min,
+    max), field the widget's member of the generated struct (Faust's varname); a button or checkbox is 0..1, and
+    bargraphs (outputs, not parameters) are left out"""
+    out = []
+    for item in ui:
+        if item["type"] in ("vgroup", "hgroup", "tgroup"):
+            out += faust_widgets(item["items"])
+        elif item["type"] in ("button", "checkbox"):
+            out.append((item["label"], item["varname"], 0.0, 0.0, 1.0))
+        elif item["type"] in ("hslider", "vslider", "nentry"):
+            out.append((item["label"], item["varname"], float(item["init"]), float(item["min"]), float(item["max"])))
+    return out
 
 
 def faust_to_c(dsp, work):
-    """the .dsp through Faust, then the wrapper that makes it a current: its C source"""
+    """the .dsp through Faust, then the wrapper that makes it a current: its C source. What the wrapper needs of the
+    program (its widgets, their fields, ranges and defaults, its channels, its declares) comes from Faust's JSON
+    description of it (faust -json)."""
     name = dsp.stem
     gen = work / f"{name}_faust.c"
     faust = os.environ.get("FAUST", "faust")
     cls = "rc_" + re.sub(r"\W", "_", name)              # the generated code's names: its own, so currents link together
-    # Faust's C is kept beside the source (gen/NAME_faust.c): made again where Faust is installed, used as it is where
-    # not (the release builder), so every build compiles the same C
+    # Faust's C and its JSON are kept beside the source (gen/NAME_faust.c, gen/NAME_faust.json): made again where Faust
+    # is installed, used as they are where not (the release builder), so every build compiles the same C
     kept = dsp.parent / "gen" / f"{name}_faust.c"
+    kept_json = dsp.parent / "gen" / f"{name}_faust.json"
     if shutil.which(faust):
-        r = subprocess.run([faust, "-lang", "c", "-single", "-cn", cls, "-ftz", "0", str(dsp), "-o", str(gen)],
-                           capture_output=True, text=True)
+        tmp = Path(tempfile.mkdtemp(prefix="faust-"))
+        r = subprocess.run([faust, "-lang", "c", "-single", "-cn", cls, "-ftz", "0", "-json", "-O", str(tmp),
+                            str(dsp), "-o", gen.name], capture_output=True, text=True)
         if r.returncode:
             sys.stderr.write(r.stderr)
+            shutil.rmtree(tmp, ignore_errors=True)
             raise SystemExit(f"currents: faust failed on {dsp}")
-        made = gen.read_text()
-        if not kept.exists() or kept.read_text() != made:
-            kept.parent.mkdir(exist_ok=True)
-            kept.write_text(made)
-            print(f"currents: gen/{kept.name} made again (commit it)")
-    elif kept.exists():
+        made = (tmp / gen.name).read_text()
+        desc = json.loads((tmp / f"{dsp.name}.json").read_text())
+        shutil.rmtree(tmp, ignore_errors=True)
+        made_json = json.dumps({k: v for k, v in desc.items() if k not in FAUST_JSON_LOCAL}, indent="\t") + "\n"
+        for path, text in ((kept, made), (kept_json, made_json)):
+            if not path.exists() or path.read_text() != text:
+                path.parent.mkdir(exist_ok=True)
+                path.write_text(text)
+                print(f"currents: gen/{path.name} made again (commit it)")
+        gen.write_text(made)
+    elif kept.exists() and kept_json.exists():
         gen.write_text(kept.read_text())
     else:
-        raise SystemExit(f"currents: no faust, and no {kept} to use instead")
+        raise SystemExit(f"currents: no faust, and no {kept} and {kept_json.name} to use instead")
+    desc = json.loads(kept_json.read_text())
     src = gen.read_text()
     src = src.replace("#include <math.h>", '#include "faust_shim.h"').replace("#include <stdlib.h>", "")
     gen.write_text(src)
-    ui = []
-    for m in UI_RE.finditer(src):
-        kind, label, field = m.group(1), m.group(2), m.group(3)
-        if kind in ("addButton", "addCheckButton"):
-            ui.append((label, field, 0.0, 0.0, 1.0))
-        else:
-            ui.append((label, field, fnum(m.group(4)), fnum(m.group(5)), fnum(m.group(6))))
-    ins = int(re.search(rf"getNumInputs{cls}\({cls}\* RESTRICT dsp\) \{{\s*return (\d+);", src).group(1))
-    outs = int(re.search(rf"getNumOutputs{cls}\({cls}\* RESTRICT dsp\) \{{\s*return (\d+);", src).group(1))
+    ui = faust_widgets(desc["ui"])
+    ins, outs = desc["inputs"], desc["outputs"]
     if ins not in (0, 1, 2) or outs not in (1, 2):
         raise SystemExit(f"currents: {dsp}: {ins} inputs, {outs} outputs (0..2 in, 1..2 out)")
     labels = [u[0] for u in ui]
     poly = all(k in labels for k in ("freq", "gain", "gate")) and ins == 0
-    vm = re.search(r'declare voices "(\d+)"', dsp.read_text())
-    voices = int(vm.group(1)) if (poly and vm) else (6 if poly else 0)
+    declared = {k: v for m in desc["meta"] for k, v in m.items()}    # (the program's declares; a library's are
+    voices = int(declared.get("voices", 6)) if poly else 0               # named LIB/KEY)
     params = [u for u in ui if not (poly and u[0] in ("freq", "gain", "gate"))]
     field = {u[0]: u[1] for u in ui}
     n = max(voices, 1)
