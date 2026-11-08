@@ -4,7 +4,7 @@
 
 **Goal:** Build Pd currents through an hvcc external generator and a set of named runtime overrides, and Faust currents from `faust -json`, instead of rewriting and scraping the compilers' C output with regular expressions, with every current coming out the same as today.
 
-**Architecture:** hvcc loads `sdk/heavy/c2ripple.py` with `-G c2ripple`. The generator gets the patch's parameters, MIDI inputs, tables and channel counts from hvcc as data (`ExternInfo`) and writes the current's wrapper from a Jinja template. The FM-1 needs a handful of Heavy's runtime files changed (no `double`, no C library, aligned loads, no `delete`). Those become committed copies in `sdk/heavy/static/`, each change listed in `sdk/heavy/PATCHES.md`, laid over hvcc's output the way hvcc's own c2owl generator lays its `deps` over it. `sdk/tools/currents.py` keeps what is Ripple's: running the tools, measuring a patch's memory on the computer, keeping generated C for builders without hvcc, and building `.cur` files. A baseline taken first, of every current's name, channels, voices, parameters and sizes, proves nothing changed.
+**Architecture:** `sdk/tools/currents.py` imports hvcc as a Python library (`hvcc.compile_dataflow`) and has it load `sdk/heavy/c2ripple.py` as an external generator. The generator gets the patch's parameters, MIDI inputs, tables and channel counts from hvcc as data (`ExternInfo`) and writes the current's wrapper from a Jinja template. The FM-1 needs a handful of Heavy's runtime files changed (no `double`, no C library, aligned loads, no `delete`). Those become committed copies in `sdk/heavy/static/`, each change listed in `sdk/heavy/PATCHES.md`, laid over hvcc's output the way hvcc's own c2owl generator lays its `deps` over it. `sdk/tools/currents.py` keeps what is Ripple's: running the tools, measuring a patch's memory on the computer, keeping generated C for builders without hvcc, and building `.cur` files. A baseline taken first, of every current's name, channels, voices, parameters and sizes, proves nothing changed.
 
 **Tech Stack:** Python 3.12 with hvcc 0.17.3 (pinned) and Jinja2 (hvcc's own dependency); Faust 2.x `-json`; C/C++ for the JieLi pi32v2 toolchain; Ripple's shell tests and host simulator.
 
@@ -13,6 +13,8 @@
 - Nothing goes upstream to hvcc: Wasted Audio does not accept AI-generated contributions (CONTRIBUTING.md, "Use of AI and LLMs").
 - Faust gets the same treatment, as a separate final task ("Was our Faust approach wrong": partly, the scraping).
 - Current names stay as released in 0.6.1 (`macro-*`, plain Pd names).
+- The wrapper comes from a custom generator rendering Jinja2 templates, not built line by line (hvcc's maintainer's advice, relayed by the user).
+- hvcc is used as a Python library (`hvcc.compile_dataflow`), not run as an external tool (same source).
 
 ---
 
@@ -23,7 +25,7 @@
 - **Today's Pd path** (`pd_to_cc` in `currents.py`): runs hvcc for C, rewrites every file with `heavy_rewrite` (regexes: `double` to `float`, float literals, `va_arg`, removing `#include <new>` and `<math.h>`, `virtual ~`, the `extern "C"` block in `Heavy_NAME.cpp`, `delete c`, the SSE fence, the hash), scrapes parameters, channels and tables out of `Heavy_NAME.cpp/.hpp` with regexes, then writes the wrapper `NAME_current.cc` line by line from Python. Heavy's shared runtime is kept in `sdk/heavy/runtime/`; each patch's own files and wrapper in `gen/NAME_heavy/` beside it.
 - **Today's Faust path** (`faust_to_c`): runs `faust -lang c -single`, swaps `<math.h>` for `faust_shim.h`, and scrapes `addHorizontalSlider` calls and `getNumInputs` with regexes.
 - **hvcc external generators:** a Python module with one subclass of `hvcc.types.compiler.Generator`, loaded with `hvcc PATCH -G MODULE` (hvcc adds the current directory to `sys.path`; set `PYTHONPATH` to load it from elsewhere). Its `compile()` gets `c_src_dir` (hvcc's C), `out_dir`, `externs: ExternInfo`, `patch_name`, `num_input_channels`, `num_output_channels` and `copyright`. `ExternInfo.parameters.inParam` is a list of `(name, IRReceiver)`, where `IRReceiver.hash` is `"0xF89F9F3E"` and `IRReceiver.attributes` is `{'min': 100.0, 'max': 8000.0, 'default': 1200.0, 'type': 'float'}`. `ExternInfo.midi.inMidi` lists names such as `'__hv_notein'`. `ExternInfo.tables` is a list of `(name, IRTable)` for `@hv_table` tables, with `IRTable.hash`. Reference: hvcc's `docs/generators/custom.md` and `hvcc/generators/c2owl/c2owl.py`.
-- **Tools on this Mac:** hvcc in a venv, `uv venv -p 3.12 ~/.venvs/hvcc && uv pip install -p ~/.venvs/hvcc/bin/python hvcc==0.17.3`, then `export HVCC=~/.venvs/hvcc/bin/hvcc`. Faust is `/opt/homebrew/bin/faust`. The FM-1 toolchain runs in podman: `export PATH=~/github/fm1-parent/bin:$PATH` (and `podman machine start` once).
+- **Tools on this Mac:** hvcc in a venv, `uv venv -p 3.12 ~/.venvs/hvcc && uv pip install -p ~/.venvs/hvcc/bin/python hvcc==0.17.3 jinja2`. hvcc needs Python 3.10 or newer, and the system `python3` here is 3.9: run `currents.py` with `~/.venvs/hvcc/bin/python` (written `$PYH` below: `export PYH=~/.venvs/hvcc/bin/python`) when Pd patches should be compiled again. With a Python that has no hvcc, `currents.py` builds Pd currents from the kept files, as the release builder does. Faust is `/opt/homebrew/bin/faust`. The FM-1 toolchain runs in podman: `export PATH=~/github/fm1-parent/bin:$PATH` (and `podman machine start` once).
 - **Tests:** `sh tests/run_tests.sh` (with `PYTHON=/opt/homebrew/bin/python3.14`) runs everything; `sh tests/pd_examples.sh` runs the four Pd droplets.
 
 ## Files
@@ -166,7 +168,7 @@ git commit -m "Currents: a snapshot of what each Faust and Pd current is, and th
 The rewritten files in `sdk/heavy/runtime/` are already exactly what the FM-1 needs. Copy the ones that differ from hvcc's originals:
 
 ```bash
-O=$(~/.venvs/hvcc/bin/python -c "import hvcc,os;print(os.path.dirname(hvcc.__file__))")/generators/ir2c/static
+O=$($PYH -c "import hvcc,os;print(os.path.dirname(hvcc.__file__))")/generators/ir2c/static
 mkdir -p sdk/heavy/static
 for f in sdk/heavy/runtime/*; do b=$(basename $f); [ -f $O/$b ] && ! cmp -s $O/$b $f && cp $f sdk/heavy/static/$b; done
 git mv sdk/heavy/HvUtils.h sdk/heavy/static/HvUtils.h
@@ -259,9 +261,9 @@ Add `HV_STATIC = SDK / "heavy" / "static"` next to `HV_RUNTIME`. In `heavy_runti
 
 Run:
 ```bash
-export HVCC=~/.venvs/hvcc/bin/hvcc PATH=~/github/fm1-parent/bin:$PATH
+export PATH=~/github/fm1-parent/bin:$PATH
 rm -rf sdk/heavy/runtime
-python3 sdk/tools/currents.py currents/pd currents/pd/community --host app/build/currents-host
+$PYH sdk/tools/currents.py currents/pd currents/pd/community --host app/build/currents-host
 git diff --stat sdk/heavy/runtime | tail -1
 python3 tests/host/currents_snapshot.py --out /tmp/snap.json
 ```
@@ -290,12 +292,12 @@ git commit -m "Heavy's runtime for the FM-1 as named files (sdk/heavy/static, PA
 - Create: `sdk/heavy/c2ripple.py`, `sdk/heavy/templates/current.cc`
 
 **Acceptance Criteria:**
-- [ ] `PYTHONPATH=sdk/heavy $HVCC currents/pd/pdsaw.pd -o /tmp/g -n pdsaw -G c2ripple` writes `/tmp/g/ripple/pdsaw_current.cc` and `/tmp/g/ripple/ripple.json`
+- [ ] `PYTHONPATH=sdk/heavy $PYH -m hvcc currents/pd/pdsaw.pd -o /tmp/g -n pdsaw -G c2ripple` writes `/tmp/g/ripple/pdsaw_current.cc` and `/tmp/g/ripple/ripple.json`
 - [ ] `ripple.json` for pdsaw: `{"ins": 0, "outs": 2, "notes": true, "params": [["cutoff", "0xF89F9F3E", 100.0, 8000.0, 1200.0], ["volume", "0xB1642755", 0.0, 1.0, 0.5]]}`
 - [ ] The wrapper for pdsaw is the same as today's `currents/pd/gen/pdsaw_heavy/pdsaw_current.cc` except for its first three lines and the `HEAP` line (both now come from elsewhere: Task 4)
 - [ ] For a logue-style patch (`app/build/community/lg_Pluck/lg_Pluck.pd`, or `loguesdk_hvcc_examples/pd/Pluck.pd` from github.com/boochow/loguesdk_hvcc_examples), the wrapper has the `held` note logic and fills `noise_r`
 
-**Verify:** `PYTHONPATH=sdk/heavy $HVCC currents/pd/pdsaw.pd -o /tmp/g -n pdsaw -G c2ripple && cat /tmp/g/ripple/ripple.json`
+**Verify:** `PYTHONPATH=sdk/heavy $PYH -m hvcc currents/pd/pdsaw.pd -o /tmp/g -n pdsaw -G c2ripple && cat /tmp/g/ripple/ripple.json` (the generator on its own, through hvcc's command line; Task 4 calls it through the library)
 
 **Steps:**
 
@@ -481,8 +483,8 @@ Floats in `P[]`: Jinja prints Python floats as `100.0`, so `{{ lo }}f` gives `10
 
 Run:
 ```bash
-export HVCC=~/.venvs/hvcc/bin/hvcc
-PYTHONPATH=sdk/heavy $HVCC currents/pd/pdsaw.pd -o /tmp/g -n pdsaw -G c2ripple >/dev/null && cat /tmp/g/ripple/ripple.json
+export PYH=~/.venvs/hvcc/bin/python
+PYTHONPATH=sdk/heavy $PYH -m hvcc currents/pd/pdsaw.pd -o /tmp/g -n pdsaw -G c2ripple >/dev/null && cat /tmp/g/ripple/ripple.json
 diff <(sed 1,3d currents/pd/gen/pdsaw_heavy/pdsaw_current.cc | grep -v "define HEAP\|operator new") <(sed 1,4d /tmp/g/ripple/pdsaw_current.cc | grep -v "operator new")
 ```
 Expected: the JSON in the acceptance criteria. The diff shows only the descriptor's name (`"pdsaw"` against `RC_NAME`). Any other difference is a template bug: fix the template.
@@ -497,14 +499,14 @@ git commit -m "c2ripple: an hvcc external generator for Ripple currents, the wra
 ```
 
 ```json:metadata
-{"files": ["sdk/heavy/c2ripple.py", "sdk/heavy/templates/current.cc"], "verifyCommand": "PYTHONPATH=sdk/heavy $HVCC currents/pd/pdsaw.pd -o /tmp/g -n pdsaw -G c2ripple && cat /tmp/g/ripple/ripple.json", "acceptanceCriteria": ["writes NAME_current.cc and ripple.json", "pdsaw ripple.json matches", "wrapper matches today's but for header lines and HEAP", "logue patch gets held-note logic and noise fill"], "modelTier": "standard"}
+{"files": ["sdk/heavy/c2ripple.py", "sdk/heavy/templates/current.cc"], "verifyCommand": "PYTHONPATH=sdk/heavy $PYH -m hvcc currents/pd/pdsaw.pd -o /tmp/g -n pdsaw -G c2ripple && cat /tmp/g/ripple/ripple.json", "acceptanceCriteria": ["writes NAME_current.cc and ripple.json", "pdsaw ripple.json matches", "wrapper matches today's but for header lines and HEAP", "logue patch gets held-note logic and noise fill"], "modelTier": "standard"}
 ```
 
 ---
 
 ### Task 4: currents.py builds Pd currents through the generator
 
-**Goal:** `pd_to_cc` runs hvcc with `-G c2ripple` and keeps its output; `heavy_rewrite`, `FLOAT_LIT`, `LOGUE_NOTE`, the regex scraping and the Python-built wrapper are gone; every current matches the baseline.
+**Goal:** `pd_to_cc` compiles the patch through hvcc's Python library with the `c2ripple` generator and keeps its output; `heavy_rewrite`, `FLOAT_LIT`, `LOGUE_NOTE`, the regex scraping and the Python-built wrapper are gone; every current matches the baseline.
 
 **Files:**
 - Modify: `sdk/tools/currents.py` (`pd_to_cc`, `heavy_rewrite`, `heavy_heap`, module constants)
@@ -521,20 +523,44 @@ git commit -m "c2ripple: an hvcc external generator for Ripple currents, the wra
 
 **Steps:**
 
-- [ ] **Step 1: Call the generator and use its output**
+- [ ] **Step 1: Compile through hvcc's library with the generator**
 
-Replace `pd_to_cc`'s body after the hvcc run. The hvcc call becomes:
+Replace the `shutil.which(hvcc)` test and the `subprocess.run([hvcc, ...])` call in `pd_to_cc`. hvcc is imported only when a Pd patch is compiled, and only if the running Python has it:
 
 ```python
-    env = dict(os.environ, PYTHONPATH=str(SDK / "heavy") + os.pathsep + os.environ.get("PYTHONPATH", ""))
-    r = subprocess.run([hvcc, str(pd), "-o", str(tmp), "-n", name, "--copyright", patch_copyright(pd),
-                        "-p", str(pd.parent / "lib"), str(SDK / "heavy" / "heavylib"), "-G", "c2ripple"],
-                       capture_output=True, text=True, env=env)
-    if r.returncode or not (tmp / "ripple" / "ripple.json").exists():
-        sys.stderr.write(r.stdout + r.stderr)
+def hvcc_lib():
+    """hvcc's compile_dataflow, if this Python has hvcc (3.10 or newer, pip install hvcc), with Ripple's generator
+    (sdk/heavy/c2ripple.py) where it can import it; else None: the kept files are used"""
+    try:
+        import hvcc
+    except ImportError:
+        return None
+    if str(SDK / "heavy") not in sys.path:
+        sys.path.insert(0, str(SDK / "heavy"))
+    return hvcc.compile_dataflow
+```
+
+In `pd_to_cc`:
+
+```python
+    compile_dataflow = hvcc_lib()
+    if compile_dataflow is None:
+        if not wrapper.exists():
+            raise SystemExit(f"currents: no hvcc in this Python ({sys.version.split()[0]}), and no {wrapper} to use "
+                             "instead (run with a Python that has hvcc: pip install hvcc)")
+        return wrapper
+    tmp = Path(tempfile.mkdtemp(prefix="hvcc-"))
+    results = compile_dataflow(pd, tmp, patch_name=name, copyright=patch_copyright(pd),
+                               search_paths=[pd.parent / "lib", SDK / "heavy" / "heavylib"],
+                               ext_generators=["c2ripple"])
+    errors = [m.message for r in results.root.values() for m in r.notifs.errors]
+    if errors or not (tmp / "ripple" / "ripple.json").exists():
+        sys.stderr.write("\n".join(errors) + "\n")
         raise SystemExit(f"currents: hvcc failed on {pd}")
     made = json.loads((tmp / "ripple" / "ripple.json").read_text())
 ```
+
+Check the exact keyword names against `hvcc/compiler.py`'s `compile_dataflow` signature in the installed version (0.17.3: `in_path, out_dir, patch_name, patch_meta_file, search_paths, generators, ext_generators, verbose, copyright, nodsp, gui`). If hvcc prints its own progress to stdout, wrap the call in `contextlib.redirect_stdout(io.StringIO())` and print that text only on failure. Remove the `HVCC` environment variable from the module docstring.
 
 Then build `files` from hvcc's C (`tmp / "c"`), unchanged, with `static/` over it (Task 2's loop, without the `heavy_rewrite` branch), and add the wrapper `tmp / "ripple" / f"{name}_current.cc"`. Measure the heap (`heavy_heap(files, name, tmp)`, unchanged). Write `ripple_heavy.h` beside the wrapper in the kept folder, and put the source lines at the top of the wrapper there:
 
@@ -572,9 +598,9 @@ Delete from `currents.py`: `FLOAT_LIT`, `heavy_rewrite`, `LOGUE_NOTE`, `HV_NOTEI
 
 Run:
 ```bash
-export HVCC=~/.venvs/hvcc/bin/hvcc PATH=~/github/fm1-parent/bin:$PATH
+export PATH=~/github/fm1-parent/bin:$PATH
 rm -rf sdk/heavy/runtime currents/pd/gen currents/pd/community/gen
-python3 sdk/tools/currents.py currents/pd currents/pd/community --host app/build/currents-host
+$PYH sdk/tools/currents.py currents/pd currents/pd/community --host app/build/currents-host
 python3 tests/host/currents_snapshot.py --out /tmp/snap.json
 ```
 Then the Verify commands. Expected: no differences, no image more than 5% off. If a current hits `soft-double routines` in the device build, find the double with `grep -n "[0-9]\.[0-9]*[^f0-9]" Heavy_NAME.cpp` in its kept folder; a literal in arithmetic needs the file in `static/` with the literal made float, and a row in `PATCHES.md`.
