@@ -1,8 +1,9 @@
 -- fold: a drone through a wavefolder, slowly shifting in frequency and ringing in a small room. The keys move its
--- root. Currents: logue-wavefolder, nts-freqshift, nts-reflection (Pd patches by boochow).
+-- root. Currents: logue-wavefolder, nts-vca, nts-freqshift, nts-reflection (Pd patches by boochow).
 -- K1 how hard it folds, K2 the frequency shift (Hz), K3 the room, K4 how fast it moves.
 
-local osc, shift, room
+local osc, gain, shift, room
+local GAIN = 0.22                                -- (the Pd patches play at full scale)
 local s = {fold = 5, shift = 3, room = 0.5, motion = 0.3}
 local root = 41                                 -- F2
 local ph, wob = 0, 0
@@ -16,10 +17,12 @@ end
 
 function init()
   osc = current.load("logue-wavefolder")
+  gain = current.load("nts-vca")
   shift = current.load("nts-freqshift")
   room = current.load("nts-reflection")
-  flow.set(osc, shift, room)
-  flow.level(0.25)
+  flow.set(osc, gain, shift, room)
+  gain:set("depth_f", GAIN)                     -- the oscillator is full scale and the room adds to it: turned down
+  flow.level(0.6)
   shift:set("depth_f", 0.6)
   apply()
   osc:note(root, 1)
@@ -58,7 +61,7 @@ function redraw()
   screen.text(12, 4, "fold")
   screen.font(1)
   screen.level(6)
-  screen.text(12, 40, "wavefolder > shift > room")
+  screen.text(12, 40, "wavefolder > vca > shift > room")
   -- a sine folded back on itself as hard as K1 says, moving with the motion
   local px, py
   for x = 0, 216, 3 do

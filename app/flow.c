@@ -19,6 +19,8 @@
 #include "ripple_current.h"
 #if defined(PLAT_HOST) && !defined(PLAT_WEB)
 #include <dlfcn.h>
+#include <stdlib.h>
+static uint32_t cur_fm1_state;              /* the simulator: the state the FM-1's build asks for (its .cur) */
 #endif
 
 /* where the last start got to, kept through a watchdog reset (.noinit): said at the next start (app.c speak) */
@@ -86,6 +88,9 @@ static uint8_t route_set_n;                 /* what the droplet set (a pause set
 static volatile float flow_gain = 0.5f;     /* the droplet's level */
 static volatile uint32_t flow_blocks;       /* blocks rendered (a reset waits for one) */
 static float flow_peak;                     /* the last block's peak (the meter) */
+#ifdef PLAT_HOST
+uint32_t flow_over;                         /* blocks above full scale (soft-clipped) since a droplet started: tests */
+#endif
 
 /* the queue to the render: a parameter or a note */
 enum { EV_SET, EV_NOTE };
@@ -353,6 +358,19 @@ static const rc_desc_t *cur_link(const char *path)
         flow_err = "not on the disk";
         return 0;
     }
+    {                                       /* the room the FM-1 gives its code (the .cur's image and zeroed data),
+                                             * taken here too, so the simulator runs out where the FM-1 does */
+        cur_head_t hd;
+        if (disk_read(&f, 0, &hd, sizeof hd) != sizeof hd || hd.magic != CUR_MAGIC) {
+            flow_err = "not a current";
+            return 0;
+        }
+        if (!arena_take(hd.image_size + hd.bss_size)) {
+            flow_err = "no room";
+            return 0;
+        }
+        cur_fm1_state = hd.state_size ? hd.state_size : 4u;
+    }
     snprintf(so, sizeof so, "%s/%.*s.so", dir ? dir : "app/build/currents-host", (int)(strlen(base + 1) - 4u), base + 1);
     if (!(h = dlopen(so, RTLD_NOW | RTLD_LOCAL))) {
         flow_err = "no host build";
@@ -392,7 +410,13 @@ static int flow_load(const char *name)
         return -1;
     }
     c = &curs[ncurs];
+#if defined(PLAT_HOST) && !defined(PLAT_WEB)
+    /* the room the FM-1's state takes, and the host's own (its pointers are wider) apart from it */
+    c->st = state_take(cur_fm1_state) ? calloc(1, d->state_size ? d->state_size : 4u) : 0;
+    if (!c->st) {
+#else
     if (!(c->st = state_take(d->state_size ? d->state_size : 4u))) {
+#endif
         flow_err = "no room";
         arena_top = top;
         sarena_top = stop;
@@ -581,5 +605,9 @@ static void flow_render(int32_t *lr, uint32_t n, uint32_t master_q12)
         lr[2 * i + 1] = (int32_t)(r * g);
     }
     flow_peak = peak;
+#ifdef PLAT_HOST
+    if (peak > 1.0f)
+        flow_over++;
+#endif
     flow_blocks++;
 }

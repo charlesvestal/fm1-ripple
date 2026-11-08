@@ -7,6 +7,7 @@ local held = {}
 local s = {wave = 0, crush = 0.3, rate = 4, gate = 0.5}
 local step, now = 0, nil
 local waves = {"pulse", "triangle", "noise"}
+local GAIN = 0.35                                -- (the Pd patches play at full scale)
 
 local function order()
   local t = {}
@@ -30,7 +31,7 @@ function init()
   crush = current.load("nts-bitcrush")
   chorus = current.load("nts-chorus")
   flow.set(osc, vca, crush, chorus)
-  flow.level(0.3)
+  flow.level(0.6)
   vca:set("depth_f", 0)                         -- the oscillator never stops: the VCA is its gate
   chorus:set("mix_f", 0.5)
   clock.set_tempo(132)
@@ -43,7 +44,7 @@ function init()
         now = seq[step % #seq + 1]
         step = step + 1
         osc:note(now, 1)
-        vca:set("depth_f", 1)
+        vca:set("depth_f", GAIN)                -- (the oscillator is full scale: the gate opens part way)
         clock.sleep(60 / clock.tempo / 4 * s.gate)
         vca:set("depth_f", 0)
       else

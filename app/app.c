@@ -361,6 +361,9 @@ static void start(int i)
     char path[64] = "/droplets/", t[40];
     text_cat(path, ui.names[i]);
     crumb_set(1, ui.names[i]);
+#ifdef PLAT_HOST
+    flow_over = 0;
+#endif
     if (strcmp(set.last, ui.names[i])) {
         strcpy(set.last, ui.names[i]);
         plat_store_save(OBJ_SETTINGS, &set, sizeof set);
@@ -751,6 +754,10 @@ int app_expect(const char *what, int *got)
             printf("  droplet error: %s\n", lr_error());
     } else if (!strcmp(what, "arena_kb"))
         *got = (int)(arena_top / 1024u);
+#ifdef PLAT_HOST
+    else if (!strcmp(what, "bus_over"))      /* blocks the sound went above full scale, since the droplet started */
+        *got = (int)flow_over;
+#endif
     else if (!strcmp(what, "dl_peak"))       /* the most draw ops a screen has had (screen.c) */
         *got = (int)dl_peak;
     else if (!strcmp(what, "dl_lost"))       /* ops that did not fit the list */

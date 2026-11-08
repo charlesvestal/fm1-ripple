@@ -17,6 +17,7 @@ turn K2 2
 turn K3 2
 wait 800
 expect peak_db_min -40
+expect bus_over 0
 shot robot.png
 key 7 up
 key 11 up
@@ -36,6 +37,7 @@ turn K2 2
 turn K3 2
 wait 800
 expect peak_db_min -40
+expect bus_over 0
 shot chip.png
 key 7 up
 key 11 up
@@ -55,6 +57,7 @@ turn K2 2
 turn K3 2
 wait 800
 expect peak_db_min -40
+expect bus_over 0
 shot fold.png
 key 7 up
 key 11 up
@@ -74,6 +77,7 @@ turn K2 2
 turn K3 2
 wait 800
 expect peak_db_min -40
+expect bus_over 0
 shot mono.png
 key 7 up
 key 11 up

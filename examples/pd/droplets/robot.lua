@@ -1,9 +1,9 @@
 -- robot: a drum beat sung through a vocoder. The drums are the voice, the keys the note it sings.
--- Currents: drums (built in), nts-vocoder and nts-chorus (Pd patches by boochow).
+-- Currents: drums (built in), nts-vocoder and nts-vca (Pd patches by boochow).
 -- K1 and K2 the two notes the vocoder adds above the key (semitones), K3 how long its bands ring, K4 the tempo.
 -- PLAY starts and stops the beat.
 
-local drums, voc, chorus
+local drums, voc, gain
 local playing, tick, held = true, -1, nil
 local s = {note1 = 7, note2 = 12, ring = 0.5}
 local beat = {                                  -- a step a sixteenth: kick, snare, hat
@@ -12,6 +12,7 @@ local beat = {                                  -- a step a sixteenth: kick, sna
   {42, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0},
 }
 local lit = 0
+local GAIN = 0.14                               -- (the Pd patches play at full scale)
 
 local function apply()
   voc:set("note1", s.note1)
@@ -22,10 +23,10 @@ end
 function init()
   drums = current.load("drums")
   voc = current.load("nts-vocoder")
-  chorus = current.load("nts-chorus")
-  flow.set(drums, voc, chorus)
-  flow.level(0.35)
-  chorus:set("mix_f", 0.4)
+  gain = current.load("nts-vca")
+  flow.set(drums, voc, gain)
+  gain:set("depth_f", GAIN)                     -- the vocoder's bands add up above full scale: turned down
+  flow.level(0.6)
   clock.set_tempo(96)
   apply()
   voc:note(48, 1)                               -- C3 until a key says otherwise
@@ -83,7 +84,7 @@ function redraw()
   screen.text(12, 4, "robot")
   screen.font(1)
   screen.level(6)
-  screen.text(12, 40, "drums > vocoder > chorus")
+  screen.text(12, 40, "drums > vocoder > vca")
   -- the three notes it sings, as bars
   local root = held or 48
   for i, iv in ipairs({0, s.note1, s.note2}) do
