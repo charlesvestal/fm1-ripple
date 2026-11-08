@@ -21,6 +21,7 @@ run() {
     fi
 }
 run host-build sh build.sh --host
+run pd-currents python3 sdk/tools/currents.py currents/pd --host app/build/currents-host   # (from the kept Heavy C)
 run droplets env RIPPLE_CURRENTS=app/build/currents-host app/build/host/ripple_host tests/scenarios/droplets.txt \
     app/build/scenarios/droplets
 mkdir -p app/build/scenarios/examples

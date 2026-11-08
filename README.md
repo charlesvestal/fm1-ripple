@@ -1,7 +1,7 @@
 # Ripple
 
 A firmware for the M-VAVE FM-1 that runs **droplets** (instruments written in Lua) playing **currents** (sounds
-written in Faust or C), both loaded from a disk in the FM-1's own flash. In disk mode, the FM-1 shows up on a
+written in Faust, Pd or C), both loaded from a disk in the FM-1's own flash. In disk mode, the FM-1 shows up on a
 computer as a USB drive: copy a droplet or a current onto it, eject it, and it's there. Nothing needs reflashing.
 
 Droplets and currents are separate on purpose: any droplet can load any currents and chain them as it likes, so a
@@ -82,8 +82,8 @@ Ripple is MPL-2.0, on fm1-base and felucca-bsp (from Felucca by Leo Kuroshita, H
 (`sdk/`), the built-in currents and droplets are MIT: `sophie` from Sophie by Matt Estela and the digisophie
 contributors, `monk` from MonkSynth by Jonathan Taylor, the `plaits-*` currents from Mutable Instruments Plaits by
 Emilie Gillet. The MIDI effects are e16-launcher's engine (MIT). Lua 5.4 is MIT (Lua.org, PUC-Rio), with the changes listed in
-`app/third_party/lua-5.4.7/PATCHES.md`. Currents are written in Faust (GRAME); the code Faust generates is the
-current's own. For details, see [LICENSING.md](LICENSING.md).
+`app/third_party/lua-5.4.7/PATCHES.md`. Currents are written in Faust (GRAME) or in Pd, compiled by Heavy (hvcc, Wasted Audio; its runtime ISC, Enzien
+Audio); the code Faust and Heavy generate is the current's own. For details, see [LICENSING.md](LICENSING.md).
 
 Ripple needs fm1-base's disk mode and code window, in review as charlesvestal/fm1-base#32 and
 hugelton/felucca-bsp#25; until they merge, `base/` follows their branches.

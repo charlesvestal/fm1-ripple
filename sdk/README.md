@@ -1,7 +1,7 @@
 # Writing currents
 
 A current is a piece of sound: a voice, a drum kit, a filter or a delay. Droplets load currents from the
-`currents` folder on Ripple's disk. You write a current in Faust or in C, build it into a `.cur` file on the
+`currents` folder on Ripple's disk. You write a current in Faust, in Pd or in C, build it into a `.cur` file on the
 computer, and copy that file onto the disk in disk mode. Nothing on the FM-1 needs updating. A current on the disk
 with the same name as a built-in one (`voice`, `delay`, `drums`, `fm`, `monk`, `pluck`, `plate`, `sophie`) is used
 instead of it.
@@ -21,7 +21,7 @@ Copy `mysound.cur` into `currents` on Ripple's disk, in disk mode, and a droplet
 `current.load("mysound")`.
 
 Building for the FM-1 needs the JieLi toolchain (`JIELI_TOOLCHAIN`, default `~/.jieli/toolchain`) and, on a Mac,
-podman or Docker, as fm1-base does. Faust currents need `faust` on the path.
+podman or Docker, as fm1-base does. Faust currents need `faust` on the path, and Pd patches `hvcc`.
 
 ## In Faust
 
@@ -53,6 +53,41 @@ Faust code is compiled to C, then built like a C current. A few things are diffe
   (then in what is left of the 84). Long delay lines are the usual problem: 16,000 float samples is 64 KB (the
   built-in `delay` is in C to keep its line at half the rate in 16 bits: 16 KB). Faust's table oscillators (`os.osc`) keep a
   65,536-sample table, too big here; use `os.sawtooth`, `os.square`, `os.triangle` or a sine from `ma.PI`.
+
+## In Pd
+
+A Pd patch becomes a current through Heavy (hvcc), which compiles it to C. Install hvcc with
+`pip install hvcc` (or point `HVCC` at it), then build the patch like any other current:
+
+```sh
+sdk/tools/currents.py mysound.pd --out build/      # build/mysound.cur, for the FM-1
+```
+
+Heavy takes Pd vanilla's objects, but not all of them: no externals, no GUI objects, and some table and message
+objects are limited. Heavy's documentation lists them, and hvcc names any object it doesn't know.
+
+The patch talks to Ripple through a few objects:
+
+- `[r NAME @hv_param MIN MAX DEFAULT]` is a parameter that droplets set with `c:set("NAME", value)`. Connect it to
+  something, or hvcc removes it.
+- `[notein]` gets the notes a droplet plays with `c:note`: note, velocity 0 to 127 (0 releases), channel 1. The
+  patch handles its own voices, with `[poly]` as usual.
+- `[dac~]` is the sound out, one or two channels. With `[adc~]` the patch is an effect and works on the sound before
+  it in the flow; without it, it adds its sound.
+
+Put the patch's abstractions in a `lib` folder beside it, so that the build doesn't take them for currents.
+`currents/pd/pdpoly.pd` is an example: four voices from `[poly 4 1]`, each one `lib/pdvoice.pd`.
+
+A few things are different from Pd on a computer:
+
+- There is no `double`, and the maths functions are the fast approximations Faust currents use.
+- `[print]` prints nothing.
+- Heavy keeps its messages and tables in memory of its own. The build measures how much a patch takes by running it
+  on the computer and gives it that much and a quarter more. A table that grows while the patch runs can run out.
+
+The build keeps Heavy's C for each patch in `gen/NAME_heavy/` beside it, and Heavy's runtime, shared by every patch,
+in `sdk/heavy/runtime/`. Commit both: a computer without hvcc builds the patch from them. The runtime is Enzien
+Audio's, under the ISC licence; the C made from your patch is yours.
 
 ## In C
 
@@ -104,7 +139,7 @@ own** takes:
 
 - a Faust current: write it there (choose "a current (Faust)") or drop the `.dsp` on it, and Run compiles it in the
   browser (Faust's WebAssembly compiler, loaded the first time). A droplet then loads it by its name.
-- a C or C++ current, built for the browser on your computer:
+- a C, C++ or Pd current, built for the browser on your computer:
 
   ```sh
   sdk/tools/currents.py mysound.c --web-module build/      # build/mysound.wasm (Emscripten's emcc)
