@@ -5,8 +5,8 @@
 
 // object includes
 #include "HeavyContext.hpp"
-#include "HvSignalLine.h"
 #include "HvMath.h"
+#include "HvSignalLine.h"
 
 class Heavy_vca : public HeavyContext {
 
@@ -47,11 +47,11 @@ class Heavy_vca : public HeavyContext {
 
 
   // static sendMessage functions
-  static void cMsg_yv9UWvvn_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cReceive_PczUjuB3_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cMsg_1mBteD6Q_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cReceive_RrHsKfFy_sendMessage(HeavyContextInterface *, int, const HvMessage *);
 
   // objects
-  SignalLine sLine_cPrejFJK;
+  SignalLine sLine_1CROWd9N;
 };
 
 #endif // _HEAVY_CONTEXT_VCA_HPP_

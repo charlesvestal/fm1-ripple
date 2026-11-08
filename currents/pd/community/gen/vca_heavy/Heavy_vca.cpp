@@ -25,7 +25,7 @@
 
 Heavy_vca::Heavy_vca(float sampleRate, int poolKb, int inQueueKb, int outQueueKb)
     : HeavyContext(sampleRate, poolKb, inQueueKb, outQueueKb) {
-  numBytes += sLine_init(&sLine_cPrejFJK);
+  numBytes += sLine_init(&sLine_1CROWd9N);
   
 }
 
@@ -40,7 +40,7 @@ HvTable *Heavy_vca::getTableForHash(hv_uint32_t tableHash) {
 void Heavy_vca::scheduleMessageForReceiver(hv_uint32_t receiverHash, HvMessage *m) {
   switch (receiverHash) {
     case 0xC21FE6A3: { // depth_f
-      mq_addMessageByTimestamp(&mq, m, 0, &cReceive_PczUjuB3_sendMessage);
+      mq_addMessageByTimestamp(&mq, m, 0, &cReceive_RrHsKfFy_sendMessage);
       break;
     }
     default: return;
@@ -80,17 +80,17 @@ int Heavy_vca::getParameterInfo(int index, HvParameterInfo *info) {
  */
 
 
-void Heavy_vca::cMsg_yv9UWvvn_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *const n) {
+void Heavy_vca::cMsg_1mBteD6Q_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *const n) {
   HvMessage *m = nullptr;
   m = HV_MESSAGE_ON_STACK(2);
   msg_init(m, 2, msg_getTimestamp(n));
   msg_setElementToFrom(m, 0, n, 0);
   msg_setFloat(m, 1, 10.0f);
-  sLine_onMessage(_c, &Context(_c)->sLine_cPrejFJK, 0, m, NULL);
+  sLine_onMessage(_c, &Context(_c)->sLine_1CROWd9N, 0, m, NULL);
 }
 
-void Heavy_vca::cReceive_PczUjuB3_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
-  cMsg_yv9UWvvn_sendMessage(_c, 0, m);
+void Heavy_vca::cReceive_RrHsKfFy_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
+  cMsg_1mBteD6Q_sendMessage(_c, 0, m);
 }
 
 
@@ -151,11 +151,11 @@ int Heavy_vca::process(float **inputBuffers, float **outputBuffers, int n) {
     __hv_zero_f(VOf(O1));
 
     // process all signal functions
-    __hv_line_f(&sLine_cPrejFJK, VOf(Bf0));
-    __hv_mul_f(VIf(I1), VIf(Bf0), VOf(Bf1));
-    __hv_add_f(VIf(Bf1), VIf(O1), VOf(O1));
-    __hv_mul_f(VIf(I0), VIf(Bf0), VOf(Bf0));
-    __hv_add_f(VIf(Bf0), VIf(O0), VOf(O0));
+    __hv_line_f(&sLine_1CROWd9N, VOf(Bf0));
+    __hv_mul_f(VIf(I0), VIf(Bf0), VOf(Bf1));
+    __hv_add_f(VIf(Bf1), VIf(O0), VOf(O0));
+    __hv_mul_f(VIf(I1), VIf(Bf0), VOf(Bf0));
+    __hv_add_f(VIf(Bf0), VIf(O1), VOf(O1));
 
     // save output vars to output buffer
     __hv_store_f(outputBuffers[0]+n, VIf(O0));

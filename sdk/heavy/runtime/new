@@ -1,0 +1,9 @@
+// SPDX-License-Identifier: MIT
+// Copyright (C) 2026 Charles Vestal
+// <new> for Heavy's C++ in a Ripple current (built with -nostdinc++): placement new, which Heavy_NAME.cpp's
+// hv_NAME_new uses. Nothing in a current calls the allocating new or delete.
+#ifndef RIPPLE_NEW
+#define RIPPLE_NEW
+#include <stddef.h>
+inline void *operator new(size_t, void *p) noexcept { return p; }
+#endif

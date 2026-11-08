@@ -5,11 +5,11 @@
 
 // object includes
 #include "HeavyContext.hpp"
-#include "HvSignalVar.h"
-#include "HvSignalPhasor.h"
-#include "HvSignalLine.h"
-#include "HvMath.h"
 #include "HvControlBinop.h"
+#include "HvSignalLine.h"
+#include "HvSignalPhasor.h"
+#include "HvSignalVar.h"
+#include "HvMath.h"
 
 class Heavy_chiptune : public HeavyContext {
 
@@ -51,23 +51,23 @@ class Heavy_chiptune : public HeavyContext {
 
 
   // static sendMessage functions
-  static void cBinop_oSdHtx3o_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cBinop_FToegvlI_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cBinop_rWPqo5UX_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cMsg_mAW1xPKR_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cMsg_C5c4xDKd_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cMsg_SWhZzrVw_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cReceive_4LPtOIeV_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cReceive_u7foLy73_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cBinop_ySAv9Jdb_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cBinop_2otfYm1j_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cBinop_54NHpoIZ_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cMsg_gpns2UVC_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cMsg_xwkwxCN9_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cMsg_8u10LyE0_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cReceive_Nx8dfTdu_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cReceive_VUi2IIEA_sendMessage(HeavyContextInterface *, int, const HvMessage *);
 
   // objects
-  SignalPhasor sPhasor_quvkUTxS;
-  SignalLine sLine_UdfMFwte;
-  SignalLine sLine_xxoPtx5S;
-  SignalLine sLine_d8ZpEz2W;
-  ControlBinop cBinop_oSdHtx3o;
-  ControlBinop cBinop_FToegvlI;
-  ControlBinop cBinop_rWPqo5UX;
+  SignalPhasor sPhasor_tRhPAxzW;
+  SignalLine sLine_sOweG7yM;
+  SignalLine sLine_RGkDHOIj;
+  SignalLine sLine_p1u6ZVKZ;
+  ControlBinop cBinop_ySAv9Jdb;
+  ControlBinop cBinop_2otfYm1j;
+  ControlBinop cBinop_54NHpoIZ;
 };
 
 #endif // _HEAVY_CONTEXT_CHIPTUNE_HPP_

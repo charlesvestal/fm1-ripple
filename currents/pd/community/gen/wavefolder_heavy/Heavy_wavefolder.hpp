@@ -5,10 +5,10 @@
 
 // object includes
 #include "HeavyContext.hpp"
-#include "HvMath.h"
-#include "HvSignalLine.h"
 #include "HvSignalPhasor.h"
 #include "HvSignalVar.h"
+#include "HvSignalLine.h"
+#include "HvMath.h"
 
 class Heavy_wavefolder : public HeavyContext {
 
@@ -53,22 +53,22 @@ class Heavy_wavefolder : public HeavyContext {
 
 
   // static sendMessage functions
-  static void cMsg_cOG6G55w_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cMsg_z9pJeugd_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cMsg_nQfOVipA_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cMsg_fF6qr2Tj_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cReceive_o0DMgrEb_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cReceive_Yldc1Q4f_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cReceive_cgTIFiW8_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cReceive_IUPagnnF_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cReceive_AN8lWzoh_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cMsg_LABhLjh4_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cMsg_YxgETOqW_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cMsg_psUpTBs2_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cMsg_haIcVZSw_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cReceive_phDSYo94_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cReceive_mGPo96oM_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cReceive_7eGOD5Q3_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cReceive_gg3If44O_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cReceive_o7jWdFLA_sendMessage(HeavyContextInterface *, int, const HvMessage *);
 
   // objects
-  SignalPhasor sPhasor_vMVDAGUA;
-  SignalLine sLine_Q50mlrP5;
-  SignalLine sLine_2a6GarGG;
-  SignalLine sLine_hbGVpssF;
-  SignalLine sLine_czsrXjet;
+  SignalPhasor sPhasor_3d2uRqYT;
+  SignalLine sLine_gdtHg9QU;
+  SignalLine sLine_hcZo5z9g;
+  SignalLine sLine_CcmlAnkP;
+  SignalLine sLine_l4OXbj63;
 };
 
 #endif // _HEAVY_CONTEXT_WAVEFOLDER_HPP_

@@ -25,10 +25,10 @@
 
 Heavy_bitcrush::Heavy_bitcrush(float sampleRate, int poolKb, int inQueueKb, int outQueueKb)
     : HeavyContext(sampleRate, poolKb, inQueueKb, outQueueKb) {
-  numBytes += sVarf_init(&sVarf_YHLo4sBU, 4.0f, 0.0f, false);
-  numBytes += sVarf_init(&sVarf_GfY3bJxy, 0.25f, 0.0f, false);
-  numBytes += sVarf_init(&sVarf_U1dx6hs6, 0.0f, 0.0f, false);
-  numBytes += sVarf_init(&sVarf_nnxBBLci, 0.0f, 0.0f, false);
+  numBytes += sVarf_init(&sVarf_AHtwmgGg, 4.0f, 0.0f, false);
+  numBytes += sVarf_init(&sVarf_ldA1tTQb, 0.25f, 0.0f, false);
+  numBytes += sVarf_init(&sVarf_u5aYxCz4, 0.0f, 0.0f, false);
+  numBytes += sVarf_init(&sVarf_y1ePLCHx, 0.0f, 0.0f, false);
   
 }
 
@@ -43,11 +43,11 @@ HvTable *Heavy_bitcrush::getTableForHash(hv_uint32_t tableHash) {
 void Heavy_bitcrush::scheduleMessageForReceiver(hv_uint32_t receiverHash, HvMessage *m) {
   switch (receiverHash) {
     case 0xC21FE6A3: { // depth_f
-      mq_addMessageByTimestamp(&mq, m, 0, &cReceive_kt9BynnL_sendMessage);
+      mq_addMessageByTimestamp(&mq, m, 0, &cReceive_3VTdhJh9_sendMessage);
       break;
     }
     case 0x8E55AA5F: { // time
-      mq_addMessageByTimestamp(&mq, m, 0, &cReceive_u0AzTVCB_sendMessage);
+      mq_addMessageByTimestamp(&mq, m, 0, &cReceive_wd5AunpO_sendMessage);
       break;
     }
     default: return;
@@ -96,30 +96,30 @@ int Heavy_bitcrush::getParameterInfo(int index, HvParameterInfo *info) {
  */
 
 
-void Heavy_bitcrush::cBinop_4VlPS6NO_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
-  sVarf_onMessage(_c, &Context(_c)->sVarf_YHLo4sBU, m);
-  cBinop_k_onMessage(_c, NULL, HV_BINOP_POW, -1.0f, 0, m, &cBinop_Xu0uyXKC_sendMessage);
+void Heavy_bitcrush::cBinop_8HDE5G97_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
+  sVarf_onMessage(_c, &Context(_c)->sVarf_AHtwmgGg, m);
+  cBinop_k_onMessage(_c, NULL, HV_BINOP_POW, -1.0f, 0, m, &cBinop_ploCuFwo_sendMessage);
 }
 
-void Heavy_bitcrush::cBinop_Xu0uyXKC_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
-  sVarf_onMessage(_c, &Context(_c)->sVarf_GfY3bJxy, m);
+void Heavy_bitcrush::cBinop_ploCuFwo_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
+  sVarf_onMessage(_c, &Context(_c)->sVarf_ldA1tTQb, m);
 }
 
-void Heavy_bitcrush::cBinop_2gzU6Xvf_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
-  cBinop_k_onMessage(_c, NULL, HV_BINOP_ADD, 1.0f, 0, m, &cBinop_r3UKsMsF_sendMessage);
+void Heavy_bitcrush::cBinop_gJpQyF7X_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
+  cBinop_k_onMessage(_c, NULL, HV_BINOP_ADD, 1.0f, 0, m, &cBinop_J0nKZfmK_sendMessage);
 }
 
-void Heavy_bitcrush::cBinop_r3UKsMsF_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
-  sVarf_onMessage(_c, &Context(_c)->sVarf_nnxBBLci, m);
+void Heavy_bitcrush::cBinop_J0nKZfmK_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
+  sVarf_onMessage(_c, &Context(_c)->sVarf_y1ePLCHx, m);
 }
 
-void Heavy_bitcrush::cReceive_u0AzTVCB_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
-  cBinop_k_onMessage(_c, NULL, HV_BINOP_POW, 2.0f, 0, m, &cBinop_4VlPS6NO_sendMessage);
+void Heavy_bitcrush::cReceive_wd5AunpO_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
+  cBinop_k_onMessage(_c, NULL, HV_BINOP_POW, 2.0f, 0, m, &cBinop_8HDE5G97_sendMessage);
 }
 
-void Heavy_bitcrush::cReceive_kt9BynnL_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
-  cBinop_k_onMessage(_c, NULL, HV_BINOP_MULTIPLY, -1.0f, 0, m, &cBinop_2gzU6Xvf_sendMessage);
-  sVarf_onMessage(_c, &Context(_c)->sVarf_U1dx6hs6, m);
+void Heavy_bitcrush::cReceive_3VTdhJh9_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
+  cBinop_k_onMessage(_c, NULL, HV_BINOP_MULTIPLY, -1.0f, 0, m, &cBinop_gJpQyF7X_sendMessage);
+  sVarf_onMessage(_c, &Context(_c)->sVarf_u5aYxCz4, m);
 }
 
 
@@ -181,22 +181,22 @@ int Heavy_bitcrush::process(float **inputBuffers, float **outputBuffers, int n) 
 
     // process all signal functions
     __hv_add_f(VIf(I0), VIf(I1), VOf(Bf0));
-    __hv_varread_f(&sVarf_YHLo4sBU, VOf(Bf1));
+    __hv_varread_f(&sVarf_AHtwmgGg, VOf(Bf1));
     __hv_mul_f(VIf(Bf0), VIf(Bf1), VOf(Bf1));
     __hv_floor_f(VIf(Bf1), VOf(Bf0));
     __hv_sub_f(VIf(Bf1), VIf(Bf0), VOf(Bf0));
     __hv_sub_f(VIf(Bf1), VIf(Bf0), VOf(Bf0));
-    __hv_varread_f(&sVarf_GfY3bJxy, VOf(Bf1));
+    __hv_varread_f(&sVarf_ldA1tTQb, VOf(Bf1));
     __hv_mul_f(VIf(Bf0), VIf(Bf1), VOf(Bf1));
-    __hv_varread_f(&sVarf_U1dx6hs6, VOf(Bf0));
+    __hv_varread_f(&sVarf_u5aYxCz4, VOf(Bf0));
     __hv_mul_f(VIf(Bf1), VIf(Bf0), VOf(Bf0));
     __hv_add_f(VIf(I0), VIf(I1), VOf(Bf1));
-    __hv_varread_f(&sVarf_nnxBBLci, VOf(Bf2));
+    __hv_varread_f(&sVarf_y1ePLCHx, VOf(Bf2));
     __hv_mul_f(VIf(Bf1), VIf(Bf2), VOf(Bf2));
     __hv_add_f(VIf(Bf0), VIf(Bf2), VOf(Bf1));
-    __hv_add_f(VIf(Bf1), VIf(O1), VOf(O1));
+    __hv_add_f(VIf(Bf1), VIf(O0), VOf(O0));
     __hv_add_f(VIf(Bf0), VIf(Bf2), VOf(Bf2));
-    __hv_add_f(VIf(Bf2), VIf(O0), VOf(O0));
+    __hv_add_f(VIf(Bf2), VIf(O1), VOf(O1));
 
     // save output vars to output buffer
     __hv_store_f(outputBuffers[0]+n, VIf(O0));

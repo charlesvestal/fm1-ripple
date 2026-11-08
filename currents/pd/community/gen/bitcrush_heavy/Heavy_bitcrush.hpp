@@ -5,9 +5,9 @@
 
 // object includes
 #include "HeavyContext.hpp"
-#include "HvSignalVar.h"
 #include "HvMath.h"
 #include "HvControlBinop.h"
+#include "HvSignalVar.h"
 
 class Heavy_bitcrush : public HeavyContext {
 
@@ -49,22 +49,22 @@ class Heavy_bitcrush : public HeavyContext {
 
 
   // static sendMessage functions
-  static void cBinop_4VlPS6NO_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cBinop_Xu0uyXKC_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cBinop_2gzU6Xvf_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cBinop_r3UKsMsF_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cReceive_u0AzTVCB_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cReceive_kt9BynnL_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cBinop_8HDE5G97_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cBinop_ploCuFwo_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cBinop_gJpQyF7X_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cBinop_J0nKZfmK_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cReceive_wd5AunpO_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cReceive_3VTdhJh9_sendMessage(HeavyContextInterface *, int, const HvMessage *);
 
   // objects
-  SignalVarf sVarf_YHLo4sBU;
-  SignalVarf sVarf_GfY3bJxy;
-  ControlBinop cBinop_4VlPS6NO;
-  ControlBinop cBinop_Xu0uyXKC;
-  ControlBinop cBinop_2gzU6Xvf;
-  ControlBinop cBinop_r3UKsMsF;
-  SignalVarf sVarf_U1dx6hs6;
-  SignalVarf sVarf_nnxBBLci;
+  SignalVarf sVarf_AHtwmgGg;
+  SignalVarf sVarf_ldA1tTQb;
+  ControlBinop cBinop_8HDE5G97;
+  ControlBinop cBinop_ploCuFwo;
+  ControlBinop cBinop_gJpQyF7X;
+  ControlBinop cBinop_J0nKZfmK;
+  SignalVarf sVarf_u5aYxCz4;
+  SignalVarf sVarf_y1ePLCHx;
 };
 
 #endif // _HEAVY_CONTEXT_BITCRUSH_HPP_

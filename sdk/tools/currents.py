@@ -15,7 +15,7 @@ A Faust current: its sliders become the current's parameters. With a "freq", a "
 played polyphonically (declare voices "6" in the .dsp; default 6): notes set those three; with inputs, an effect.
 A Pd patch: through Heavy (hvcc) into C++: its [r NAME @hv_param MIN MAX DEFAULT] are the parameters, [notein] gets
 the notes, [adc~] makes it an effect; its abstractions in lib/ beside it. Heavy's C is kept in gen/NAME_heavy/ and its
-runtime in sdk/heavy/runtime/, like Faust's C (sdk/heavy/HvUtils.h makes it freestanding).
+runtime in sdk/heavy/runtime/, like Faust's C (hvcc's files with sdk/heavy/static/ over them: sdk/heavy/PATCHES.md).
 A source may be a folder: its .dsp, .pd, .c and .cc files.
 A C current: writes its own rc_desc_t (sdk/include/ripple_current.h) and RC_EXPORT()s it. A C++ current (.cc) the
 same, freestanding: no exceptions, RTTI, thread-safe statics or C++ library, and nothing that needs a constructor
@@ -200,13 +200,16 @@ HV_NOTEIN = 0x67E37CA3                              # Heavy's hash of "__hv_note
 LOGUE_NOTE = ("pitch", "pitch_note", "noteon_trig", "noteoff_trig")
 HV_POOL_KB, HV_INQ_KB = 2, 1                        # Heavy's message pool and input queue
 HV_RUNTIME = SDK / "heavy" / "runtime"              # Heavy's own files, shared by every patch
+HV_STATIC = SDK / "heavy" / "static"                # Ripple's runtime files, laid over hvcc's (sdk/heavy/PATCHES.md)
+HV_OWN = ("HvUtils.h", "heavy_shim.c", "new")       # (of them, Ripple's own: not hvcc's files changed)
 
 
 FLOAT_LIT = re.compile(r"(?<![\w.])(\d+\.\d*(?:[eE][-+]?\d+)?|\.\d+(?:[eE][-+]?\d+)?|\d+[eE][-+]?\d+)(?![\w.])")
 
 
 def heavy_rewrite(text, fname, name):
-    """hvcc's C/C++ made freestanding: no doubles, no C library, no new or delete (sdk/heavy/HvUtils.h has the rest)"""
+    """the patch's own C++ (Heavy_NAME.*) made freestanding: no doubles, no C library, no new or delete (the runtime's
+    files are Ripple's copies: sdk/heavy/static/)"""
     text = text.replace("va_arg(ap, double)", "RC_HV_VA_FLOAT(ap)")
     text = re.sub(r"\bdouble\b", "float", text)
     text = FLOAT_LIT.sub(r"\1f", text)            # 1000.0 -> 1000.0f
@@ -214,13 +217,6 @@ def heavy_rewrite(text, fname, name):
     text = text.replace("virtual ~", "~")           # (no deleting destructors: they call operator delete)
     if fname == f"Heavy_{name}.cpp":                # its C functions allocate with new: the current builds it itself
         text = re.sub(r'extern "C" \{.*?\} // extern "C"', "", text, flags=re.S)
-    if fname == "HvUtils.c":                        # the hash reads a word at a time from any address: the FM-1
-        text = text.replace("#if HV_EMSCRIPTEN", "#if 1 /* the FM-1: no unaligned loads */")   # faults; byte by byte
-    if fname == "HvLightPipe.c":                    # its fence: a compiler barrier on every machine (the render
-        text = re.sub(r"#if __SSE__ \|\| HV_SIMD_SSE\n.*?\n#endif\n",  # and set never run at once), and no SSE or
-                      "#define hv_sfence() __asm__ volatile(\"\" : : : \"memory\")\n", text, flags=re.S)   # ACLE header
-    if fname == "HvHeavy.cpp":                      # (and frees with delete)
-        text = text.replace("  delete c;", "  (void) c;")
     return text
 
 
@@ -259,13 +255,17 @@ def pd_to_cc(pd, work):
         raise SystemExit(f"currents: hvcc failed on {pd}")
     files = {}
     for f in sorted(out.iterdir()):
-        if f.name == "HvUtils.h" or f.suffix not in (".c", ".cpp", ".h", ".hpp"):
+        if f.suffix not in (".c", ".cpp", ".h", ".hpp"):
             continue
-        files[f.name] = heavy_rewrite(f.read_text(), f.name, name)
+        if f.name.startswith(f"Heavy_{name}."):
+            files[f.name] = heavy_rewrite(f.read_text(), f.name, name)    # (until the generator)
+        else:
+            files[f.name] = f.read_text()
+    for f in sorted(HV_STATIC.iterdir()):           # Ripple's runtime files (sdk/heavy/PATCHES.md)
+        if f.name in files or f.name in HV_OWN:
+            files[f.name] = f.read_text()
     own = {fn for fn in files if fn.startswith(f"Heavy_{name}.")}
     heavy_runtime({fn: text for fn, text in files.items() if fn not in own}, r.stdout)
-    files["HvUtils.h"] = (SDK / "heavy" / "HvUtils.h").read_text()     # (for the measure: it builds everything in one place)
-    files["rc_heavy_shim.c"] = (SDK / "heavy" / "heavy_shim.c").read_text()
     cpp = files[f"Heavy_{name}.cpp"]
     hpp = files[f"Heavy_{name}.hpp"]
     ins = int(re.search(r"getNumInputChannels\(\) override \{ return (\d+); \}", hpp).group(1))
@@ -287,11 +287,10 @@ def pd_to_cc(pd, work):
     noise = re.findall(r"= (0x[0-9A-F]+), // (\w+_r)\n", re.search(r"enum Table : hv_uint32_t \{(.*?)\};", hpp, re.S).group(1)
                        if "enum Table" in hpp else "")
     heap = heavy_heap(files, name, tmp)
-    sh = os.path.relpath(SDK / "heavy", kept)       # (globs and -I relative to the wrapper)
-    rt = os.path.relpath(HV_RUNTIME, kept)
+    rt = os.path.relpath(HV_RUNTIME, kept)          # (globs and -I relative to the wrapper)
     w = [f"// generated by sdk/tools/currents.py from {pd.name} (Heavy): a Ripple current",
-         f"// ripple-sources: *.cpp {rt}/*.c {rt}/*.cpp {sh}/heavy_shim.c",
-         f"// ripple-cflags: -I. -I{sh} -I{rt}",
+         f"// ripple-sources: *.cpp {rt}/*.c {rt}/*.cpp",
+         f"// ripple-cflags: -I. -I{rt}",
          '#include "ripple_current.h"', f'#include "Heavy_{name}.hpp"', "",
          "inline void *operator new(size_t, void *p) noexcept { return p; }",
          "typedef struct { char *base; size_t size, used, peak_fail; } rc_hv_arena_t;",
@@ -371,7 +370,8 @@ def pd_to_cc(pd, work):
 
 
 def heavy_runtime(files, log):
-    """Heavy's runtime, made freestanding once and shared by every patch: sdk/heavy/runtime/. hvcc writes only the
+    """Heavy's runtime, hvcc's files with Ripple's (sdk/heavy/static/) over them, shared by every patch:
+    sdk/heavy/runtime/. hvcc writes only the
     files a patch uses: they are added; another hvcc version's runtime replaces it all."""
     ver = re.search(r"\d+\.\d+\.\d+", subprocess.run([os.environ.get("HVCC", "hvcc"), "--version"], capture_output=True,
                                                      text=True).stdout or "")
@@ -395,7 +395,8 @@ def heavy_heap(files, name, tmp):
     d = tmp / "measure"
     d.mkdir()
     for fn, text in files.items():
-        (d / fn).write_text(text)
+        if fn != "new":                             # (this computer's C++ library has its own <new>)
+            (d / fn).write_text(text)
     (d / "measure.cpp").write_text(f"""#include <stdio.h>
 #include "Heavy_{name}.hpp"
 inline void *operator new(size_t, void *p) noexcept {{ return p; }}
