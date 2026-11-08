@@ -82,8 +82,8 @@ Ripple is MPL-2.0, on fm1-base and felucca-bsp (from Felucca by Leo Kuroshita, H
 (`sdk/`), the built-in currents and droplets are MIT: `sophie` from Sophie by Matt Estela and the digisophie
 contributors, `monk` from MonkSynth by Jonathan Taylor, the `macro-*` currents from Emilie Gillet's Plaits
 code. The MIDI effects are e16-launcher's engine (MIT). Lua 5.4 is MIT (Lua.org, PUC-Rio), with the changes listed in
-`app/third_party/lua-5.4.7/PATCHES.md`. Currents are written in Faust (GRAME) or in Pd, compiled by [Heavy (hvcc)](https://github.com/Wasted-Audio/hvcc) (Wasted Audio; its runtime ISC,
-Enzien Audio); the code Faust and Heavy generate is the current's own. For details, see [LICENSING.md](LICENSING.md).
+`app/third_party/lua-5.4.7/PATCHES.md`. Currents are written in Faust (GRAME) or in Pd, compiled by [hvcc](https://github.com/Wasted-Audio/hvcc) (Wasted Audio's continuation of
+Enzien Audio's Heavy; its runtime ISC); the code Faust and Heavy generate is the current's own. For details, see [LICENSING.md](LICENSING.md).
 
 Ripple needs fm1-base's disk mode and code window, in review as charlesvestal/fm1-base#32 and
 hugelton/felucca-bsp#25; until they merge, `base/` follows their branches.

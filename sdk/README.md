@@ -101,8 +101,8 @@ A few things are different from Pd on a computer:
 
 The build keeps Heavy's C for each patch in `gen/NAME_heavy/` beside it, and Heavy's runtime, shared by every patch,
 in `sdk/heavy/runtime/`. Commit both: a computer without hvcc builds the patch from them. The runtime is Enzien
-Audio's, under the ISC licence; the C made from your patch is yours. Put a `LICENSE` beside the patch and the build
-writes its copyright lines into that C.
+Audio's and Wasted Audio's, under the ISC licence; the C made from your patch is yours. Put a `LICENSE` beside the
+patch and the build writes its copyright lines into that C.
 
 ## In C
 

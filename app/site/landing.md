@@ -18,7 +18,7 @@ Version {{VERSION}}. Installing is at your own risk; the installer can put M-VAV
 - [Download {{PKG}}](firmware/{{PKG}}): for the command-line installer, `python3 tools/fm1_install.py {{PKG}}`.
 - [Source](https://github.com/charlesvestal/fm1-ripple): MPL-2.0; the SDK and the droplets MIT. Built on fm1-base
   and felucca-bsp, from Felucca by Leo Kuroshita, Hügelton Instruments. Lua 5.4 by Lua.org, PUC-Rio. Currents in
-  Faust, by GRAME, and in Pd through [Heavy (hvcc)](https://github.com/Wasted-Audio/hvcc), by
-  Wasted Audio and Enzien Audio. Inspired by monome's norns.
+  Faust, by GRAME, and in Pd, compiled by [hvcc](https://github.com/Wasted-Audio/hvcc): Wasted Audio's
+  continuation of Enzien Audio's Heavy. Inspired by monome's norns.
 
 M-VAVE and FM-1 are trademarks of their owners. Ripple is not affiliated with M-VAVE or monome.

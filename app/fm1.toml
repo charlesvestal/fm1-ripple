@@ -27,7 +27,7 @@ gen = ["../tools/mkdisk.py ../disk --header {gen}/disk_image.h",        # the em
 tagline = "Droplets and currents for the FM-1"
 repo = "https://github.com/charlesvestal/fm1-ripple"
 licence = "MPL-2.0"
-credits = "Built on fm1-base and felucca-bsp, from Felucca by Leo Kuroshita (Hügelton Instruments). Lua 5.4 (MIT, Lua.org, PUC-Rio). Currents in Faust (GRAME) and in Pd through Heavy (hvcc: Wasted Audio, Enzien Audio)."
+credits = "Built on fm1-base and felucca-bsp, from Felucca by Leo Kuroshita (Hügelton Instruments). Lua 5.4 (MIT, Lua.org, PUC-Rio). Currents in Faust (GRAME) and in Pd, compiled by hvcc (Wasted Audio, continuing Enzien Audio's Heavy)."
 
 # firmware.json, for firmware hubs (fm1-base docs/FIRMWARE-JSON.md)
 author = "Charles Vestal"

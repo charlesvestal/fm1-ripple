@@ -16,5 +16,5 @@
     "flash": ["856014", "B36014"],
     "features": ["usb-audio-in", "usb-disk", "second-core", "velocity", "pressure", "screen-reader"]
   },
-  "credits": "Built on fm1-base and felucca-bsp, from Felucca by Leo Kuroshita (Hügelton Instruments). Lua 5.4 (MIT, Lua.org, PUC-Rio). Currents in Faust (GRAME) and in Pd through Heavy (hvcc: Wasted Audio, Enzien Audio)."
+  "credits": "Built on fm1-base and felucca-bsp, from Felucca by Leo Kuroshita (Hügelton Instruments). Lua 5.4 (MIT, Lua.org, PUC-Rio). Currents in Faust (GRAME) and in Pd, compiled by hvcc (Wasted Audio, continuing Enzien Audio's Heavy)."
 }
