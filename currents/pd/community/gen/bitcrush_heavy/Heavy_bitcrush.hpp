@@ -5,14 +5,14 @@
 
 // object includes
 #include "HeavyContext.hpp"
+#include "HvSignalVar.h"
 #include "HvMath.h"
 #include "HvControlBinop.h"
-#include "HvSignalVar.h"
 
 class Heavy_bitcrush : public HeavyContext {
 
  public:
-  Heavy_bitcrush(float sampleRate, int poolKb=10, int inQueueKb=2, int outQueueKb=0);
+  Heavy_bitcrush(double sampleRate, int poolKb=10, int inQueueKb=2, int outQueueKb=0);
   ~Heavy_bitcrush();
 
   const char *getName() override { return "bitcrush"; }
@@ -49,22 +49,22 @@ class Heavy_bitcrush : public HeavyContext {
 
 
   // static sendMessage functions
-  static void cBinop_8HDE5G97_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cBinop_ploCuFwo_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cBinop_gJpQyF7X_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cBinop_J0nKZfmK_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cReceive_wd5AunpO_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cReceive_3VTdhJh9_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cBinop_uVEDHN71_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cBinop_5ocp6D15_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cBinop_Xbuh0ct1_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cBinop_TJfspUfM_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cReceive_ZzqXOwG7_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cReceive_6GSSHe9P_sendMessage(HeavyContextInterface *, int, const HvMessage *);
 
   // objects
-  SignalVarf sVarf_AHtwmgGg;
-  SignalVarf sVarf_ldA1tTQb;
-  ControlBinop cBinop_8HDE5G97;
-  ControlBinop cBinop_ploCuFwo;
-  ControlBinop cBinop_gJpQyF7X;
-  ControlBinop cBinop_J0nKZfmK;
-  SignalVarf sVarf_u5aYxCz4;
-  SignalVarf sVarf_y1ePLCHx;
+  SignalVarf sVarf_C4r76w9v;
+  SignalVarf sVarf_GoKIuAh9;
+  ControlBinop cBinop_uVEDHN71;
+  ControlBinop cBinop_5ocp6D15;
+  ControlBinop cBinop_Xbuh0ct1;
+  ControlBinop cBinop_TJfspUfM;
+  SignalVarf sVarf_0SLFC8lX;
+  SignalVarf sVarf_BdDlo9dM;
 };
 
 #endif // _HEAVY_CONTEXT_BITCRUSH_HPP_

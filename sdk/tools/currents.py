@@ -13,9 +13,11 @@ the host simulator.
 
 A Faust current: its sliders become the current's parameters. With a "freq", a "gain" and a "gate", it is a voice,
 played polyphonically (declare voices "6" in the .dsp; default 6): notes set those three; with inputs, an effect.
-A Pd patch: through Heavy (hvcc) into C++: its [r NAME @hv_param MIN MAX DEFAULT] are the parameters, [notein] gets
-the notes, [adc~] makes it an effect; its abstractions in lib/ beside it. Heavy's C is kept in gen/NAME_heavy/ and its
-runtime in sdk/heavy/runtime/, like Faust's C (hvcc's files with sdk/heavy/static/ over them: sdk/heavy/PATCHES.md).
+A Pd patch: through Heavy (hvcc's Python library, with Ripple's generator sdk/heavy/c2ripple.py) into C++: its
+[r NAME @hv_param MIN MAX DEFAULT] are the parameters, [notein] gets the notes, [adc~] makes it an effect; its
+abstractions in lib/ beside it. Heavy's C for the patch and the wrapper are kept in gen/NAME_heavy/ and its runtime in
+sdk/heavy/runtime/, like Faust's C (hvcc's files with sdk/heavy/static/ over them: sdk/heavy/PATCHES.md); made again
+when this runs on a Python with hvcc (pip install hvcc==0.17.3).
 A source may be a folder: its .dsp, .pd, .c and .cc files.
 A C current: writes its own rc_desc_t (sdk/include/ripple_current.h) and RC_EXPORT()s it. A C++ current (.cc) the
 same, freestanding: no exceptions, RTTI, thread-safe statics or C++ library, and nothing that needs a constructor
@@ -27,9 +29,13 @@ The browser's emulator leaves C++ currents out.
 
 Faust's C for a .dsp is kept in gen/ beside it: made again where Faust is installed, used as it is where it is not.
 
-Environment: JIELI_TOOLCHAIN (default ~/.jieli/toolchain), FAUST (default faust), HVCC (default hvcc)."""
+Environment: JIELI_TOOLCHAIN (default ~/.jieli/toolchain), FAUST (default faust)."""
 import argparse
+import contextlib
 import hashlib
+import importlib.metadata
+import io
+import json
 import os
 import platform
 import shutil
@@ -196,28 +202,26 @@ def faust_to_c(dsp, work):
 
 
 # --------------------------------------------------------------------- Pd ---
-HV_NOTEIN = 0x67E37CA3                              # Heavy's hash of "__hv_notein": where [notein] listens
-LOGUE_NOTE = ("pitch", "pitch_note", "noteon_trig", "noteoff_trig")
-HV_POOL_KB, HV_INQ_KB = 2, 1                        # Heavy's message pool and input queue
 HV_RUNTIME = SDK / "heavy" / "runtime"              # Heavy's own files, shared by every patch
 HV_STATIC = SDK / "heavy" / "static"                # Ripple's runtime files, laid over hvcc's (sdk/heavy/PATCHES.md)
 HV_OWN = ("HvUtils.h", "heavy_shim.c", "new")       # (of them, Ripple's own: not hvcc's files changed)
+# Heavy's C for a patch is built as hvcc writes it, with these flags. An [expr] puts the patch's numbers in the C as
+# they are, 0.5 a double: the compiler takes them as floats (the FM-1 has no double arithmetic). hvcc's hv_NAME_free,
+# which a current never calls, destroys the patch through its non-virtual destructor (PATCHES.md): no warning.
+HV_CFLAGS = ["-cl-single-precision-constant", "-Wno-delete-non-virtual-dtor"]
 
 
-FLOAT_LIT = re.compile(r"(?<![\w.])(\d+\.\d*(?:[eE][-+]?\d+)?|\.\d+(?:[eE][-+]?\d+)?|\d+[eE][-+]?\d+)(?![\w.])")
-
-
-def heavy_rewrite(text, fname, name):
-    """the patch's own C++ (Heavy_NAME.*) made freestanding: no doubles, no C library, no new or delete (the runtime's
-    files are Ripple's copies: sdk/heavy/static/)"""
-    text = text.replace("va_arg(ap, double)", "RC_HV_VA_FLOAT(ap)")
-    text = re.sub(r"\bdouble\b", "float", text)
-    text = FLOAT_LIT.sub(r"\1f", text)            # 1000.0 -> 1000.0f
-    text = text.replace("#include <math.h>", "").replace("#include <new>", "")
-    text = text.replace("virtual ~", "~")           # (no deleting destructors: they call operator delete)
-    if fname == f"Heavy_{name}.cpp":                # its C functions allocate with new: the current builds it itself
-        text = re.sub(r'extern "C" \{.*?\} // extern "C"', "", text, flags=re.S)
-    return text
+def hvcc_lib():
+    """hvcc's compile_dataflow, if this Python has hvcc (3.10 or newer, pip install hvcc), with Ripple's generator
+    (sdk/heavy/c2ripple.py) importable; else None: the kept files are used"""
+    try:
+        import hvcc
+    except ImportError:
+        return None
+    sys.dont_write_bytecode = True                  # (no __pycache__ beside the generator)
+    if str(SDK / "heavy") not in sys.path:
+        sys.path.insert(0, str(SDK / "heavy"))
+    return hvcc.compile_dataflow
 
 
 def patch_copyright(pd):
@@ -233,154 +237,75 @@ def patch_copyright(pd):
 
 
 def pd_to_cc(pd, work):
-    """the patch through Heavy (hvcc), then the wrapper that makes it a current: its C++ source. Heavy's sources and
-    the wrapper are kept beside the patch (gen/NAME_heavy/): made again where hvcc is installed, used as they are
-    where it is not."""
+    """the patch through Heavy (hvcc's library, with Ripple's generator sdk/heavy/c2ripple.py writing the wrapper that
+    makes it a current): its C++ source. hvcc's files for the patch (Heavy_NAME.*, as hvcc writes them), the wrapper
+    and ripple_heavy.h are kept beside the patch (gen/NAME_heavy/): made again where hvcc is installed, used as they
+    are where it is not."""
     name = re.sub(r"\W", "_", pd.stem)
     kept = pd.parent / "gen" / f"{pd.stem}_heavy"
     wrapper = kept / f"{name}_current.cc"
-    hvcc = os.environ.get("HVCC", "hvcc")
-    if not shutil.which(hvcc):
+    compile_dataflow = hvcc_lib()
+    if compile_dataflow is None:
         if not wrapper.exists():
-            raise SystemExit(f"currents: no hvcc, and no {wrapper} to use instead")
+            raise SystemExit(f"currents: {pd.name} needs hvcc (a Python 3.10 or newer with pip install hvcc==0.17.3 "
+                             f"running this), or {wrapper} to use instead")
         return wrapper
     tmp = Path(tempfile.mkdtemp(prefix="hvcc-"))
-    r = subprocess.run([hvcc, str(pd), "-o", str(tmp), "-n", name, "--copyright", patch_copyright(pd),
-                        "-p", str(pd.parent / "lib"), str(SDK / "heavy" / "heavylib")],   # (abstractions: lib/ beside
-                       # the patch, so they aren't taken for currents; and Wasted Audio's heavylib)
-                       capture_output=True, text=True)
-    out = tmp / "c"
-    if r.returncode or not (out / f"Heavy_{name}.cpp").exists():
-        sys.stderr.write(r.stdout + r.stderr)
-        raise SystemExit(f"currents: hvcc failed on {pd}")
+    said = io.StringIO()                            # (hvcc says what it does: shown only when it fails)
+    try:
+        with contextlib.redirect_stdout(said):
+            results = compile_dataflow(pd, tmp, patch_name=name, copyright=patch_copyright(pd),
+                                       search_paths=[pd.parent / "lib", SDK / "heavy" / "heavylib"],   # (abstractions:
+                                       # lib/ beside the patch, so they aren't taken for currents; Wasted Audio's heavylib)
+                                       ext_generators=["c2ripple"])
+    except ValueError as e:                         # (the generator refuses a patch that cannot be a current)
+        sys.stderr.write(said.getvalue())
+        raise SystemExit(f"currents: {pd}: {e}")
+    errors = [m.message for r in results.root.values() for m in r.notifs.errors]
+    errors += [f"{stage}: failed" for stage, r in results.root.items() if r.notifs.has_error and not r.notifs.errors]
+    made = tmp / "ripple"
+    # (hvcc only says "Module c2ripple not found" when the generator, or what it imports, does not load)
+    if errors or "c2ripple" not in results.root or not (made / f"{name}_current.cc").exists() \
+            or not (made / "ripple.json").exists():
+        sys.stderr.write(said.getvalue())
+        raise SystemExit(f"currents: hvcc failed on {pd}" + "".join(f"\n  {m}" for m in errors))
+    info = json.loads((made / "ripple.json").read_text())
     files = {}
-    for f in sorted(out.iterdir()):
-        if f.suffix not in (".c", ".cpp", ".h", ".hpp"):
-            continue
-        if f.name.startswith(f"Heavy_{name}."):
-            files[f.name] = heavy_rewrite(f.read_text(), f.name, name)    # (until the generator)
-        else:
+    for f in sorted((tmp / "c").iterdir()):         # hvcc's C as it is, Ripple's runtime files over it
+        if f.suffix in (".c", ".cpp", ".h", ".hpp"):
             files[f.name] = f.read_text()
-    for f in sorted(HV_STATIC.iterdir()):           # Ripple's runtime files (sdk/heavy/PATCHES.md)
+    for f in sorted(HV_STATIC.iterdir()):           # (sdk/heavy/PATCHES.md)
         if f.name in files or f.name in HV_OWN:
             files[f.name] = f.read_text()
-    own = {fn for fn in files if fn.startswith(f"Heavy_{name}.")}
-    heavy_runtime({fn: text for fn, text in files.items() if fn not in own}, r.stdout)
-    cpp = files[f"Heavy_{name}.cpp"]
-    hpp = files[f"Heavy_{name}.hpp"]
-    ins = int(re.search(r"getNumInputChannels\(\) override \{ return (\d+); \}", hpp).group(1))
-    outs = int(re.search(r"getNumOutputChannels\(\) override \{ return (\d+); \}", hpp).group(1))
-    if ins not in (0, 1, 2) or outs not in (1, 2):
-        raise SystemExit(f"currents: {pd}: {ins} inputs, {outs} outputs (0..2 in, 1..2 out: [adc~], [dac~])")
-    params = []                                     # the patch's [r NAME @hv_param MIN MAX DEFAULT]
-    for m in re.finditer(r'info->name = "([^"]*)";\s*info->hash = (0x[0-9A-F]+);\s*'
-                         r'info->type = HvParameterType::HV_PARAM_TYPE_PARAMETER_IN;\s*'
-                         r'info->minVal = ([-\d.e]+)f;\s*info->maxVal = ([-\d.e]+)f;\s*info->defaultVal = ([-\d.e]+)f;', cpp):
-        params.append((m.group(1), m.group(2), float(m.group(3)), float(m.group(4)), float(m.group(5))))
-    notes = f"0x{HV_NOTEIN:08X}" in cpp
-    # the logue SDK's way (boochow's hvcc_loguesdk and kin): the note as pitch (Hz) or pitch_note, and bangs on
-    # noteon_trig and noteoff_trig; made notes, like Faust's freq / gain / gate, and not parameters
-    logue = {label: h for label, h, *_r in params if label in LOGUE_NOTE}
-    if not notes and logue:
-        params = [q for q in params if q[0] not in LOGUE_NOTE]
-    # the logue way's noise: an [table NAME_r @hv_table] filled with white noise before each block
-    noise = re.findall(r"= (0x[0-9A-F]+), // (\w+_r)\n", re.search(r"enum Table : hv_uint32_t \{(.*?)\};", hpp, re.S).group(1)
-                       if "enum Table" in hpp else "")
+    own = sorted(fn for fn in files if fn.startswith(f"Heavy_{name}."))
+    heavy_runtime({fn: text for fn, text in files.items() if fn not in own})
     heap = heavy_heap(files, name, tmp)
     rt = os.path.relpath(HV_RUNTIME, kept)          # (globs and -I relative to the wrapper)
-    w = [f"// generated by sdk/tools/currents.py from {pd.name} (Heavy): a Ripple current",
-         f"// ripple-sources: *.cpp {rt}/*.c {rt}/*.cpp",
-         f"// ripple-cflags: -I. -I{rt}",
-         '#include "ripple_current.h"', f'#include "Heavy_{name}.hpp"', "",
-         "inline void *operator new(size_t, void *p) noexcept { return p; }",
-         "typedef struct { char *base; size_t size, used, peak_fail; } rc_hv_arena_t;",
-         'extern "C" rc_hv_arena_t *rc_hv_arena;', "",
-         f"#define HEAP {heap}                       /* measured with the patch built on the computer, and a margin */",
-         "typedef struct {",
-         f"    alignas(8) char obj[sizeof(Heavy_{name})];",
-         "    rc_hv_arena_t arena;",
-         "    alignas(8) char heap[HEAP];",
-         "    float in[2][256], out[2][256];",
-         "    int held;                               /* the logue way's note playing, -1 none */",
-         "    uint32_t rnd;                           /* the noise tables' generator */",
-         "} st_t;", "",
-         "static const rc_param_t P[] = {"]
-    for label, _h, lo, hi, d in params:
-        w.append(f'    {{"{label}", {lo!r}f, {hi!r}f, {d!r}f}},')
-    if not params:
-        w.append('    {"", 0.0f, 0.0f, 0.0f},')
-    w += ["};", "static const hv_uint32_t H[] = {" + ", ".join(h for _l, h, *_r in params) + ("" if params else "0") + "};", "",
-          f"static Heavy_{name} *hv(st_t *s)", "{",
-          "    rc_hv_arena = &s->arena;                 /* (Heavy takes a little more as messages queue) */",
-          f"    return reinterpret_cast<Heavy_{name} *>(s->obj);", "}", "",
-          "static void set(void *p, int k, float v)", "{",
-          "    if (k >= 0 && k < (int)(sizeof(H) / sizeof(H[0])) && H[k]) hv((st_t *)p)->sendFloatToReceiver(H[k], v);", "}", "",
-          "static void init(void *p, float sr)", "{", "    st_t *s = (st_t *)p;",
-          "    s->arena.base = s->heap;", "    s->held = -1;", "    s->rnd = 22222u;", "    s->arena.size = HEAP;", "    rc_hv_arena = &s->arena;",
-          f"    new (s->obj) Heavy_{name}(sr, {HV_POOL_KB}, {HV_INQ_KB}, 0);",
-          f"    for (int k = 0; k < {len(params)}; k++) set(p, k, P[k].def);", "}", ""]
-    if not notes and logue:
-        w += ["static void note(void *p, int nt, float vel)", "{",
-              "    st_t *s = (st_t *)p;",
-              "    if (vel <= 0.0f) {                       /* the note playing let go: noteoff_trig */",
-              "        if (nt == s->held) {", "            s->held = -1;"]
-        if "noteoff_trig" in logue:
-            w += [f"            hv(s)->sendBangToReceiver({logue['noteoff_trig']});"]
-        w += ["        }", "        return;", "    }", "    s->held = nt;"]
-        if "pitch" in logue:
-            w += [f"    hv(s)->sendFloatToReceiver({logue['pitch']}, 440.0f * fm_exp2f((float)(nt - 69) / 12.0f));"]
-        if "pitch_note" in logue:
-            w += [f"    hv(s)->sendFloatToReceiver({logue['pitch_note']}, (float)nt);"]
-        if "noteon_trig" in logue:
-            w += [f"    hv(s)->sendBangToReceiver({logue['noteon_trig']});"]
-        w += ["}", ""]
-        notes = True
-    elif notes:
-        w += ["static void note(void *p, int nt, float vel)", "{",
-              "    HvMessage *m = HV_MESSAGE_ON_STACK(3);   /* [notein]: note, velocity 0..127, channel 1 */",
-              "    msg_init(m, 3, 0);", "    msg_setFloat(m, 0, (float)nt);", "    msg_setFloat(m, 1, vel * 127.0f);",
-              "    msg_setFloat(m, 2, 1.0f);", f"    hv((st_t *)p)->sendMessageToReceiver(0x{HV_NOTEIN:08X}, 0.0f, m);", "}", ""]
-    rr = "s->out[1]" if outs == 2 else "s->out[0]"
-    w += ["static void process(void *p, float *l, float *r, int n)", "{", "    st_t *s = (st_t *)p;",
-          "    float *in[2] = {s->in[0], s->in[1]}, *out[2] = {s->out[0], s->out[1]};"]
-    if ins == 2:
-        w += ["    for (int i = 0; i < n; i++) { s->in[0][i] = l[i]; s->in[1][i] = r[i]; }"]
-    elif ins == 1:
-        w += ["    for (int i = 0; i < n; i++) s->in[0][i] = 0.5f * (l[i] + r[i]);"]
-    for h, tname in noise:
-        w += [f"    {{ float *b = hv(s)->getBufferForTable({h}); int k = hv(s)->getLengthForTable({h});   /* {tname} */",
-              "      while (b && k--) { s->rnd = s->rnd * 1664525u + 1013904223u; *b++ = (float)(int32_t)s->rnd * 4.656613e-10f; } }"]
-    w += ["    hv(s)->process(in, out, n);"]
-    if ins:
-        w += [f"    for (int i = 0; i < n; i++) {{ l[i] = s->out[0][i]; r[i] = {rr}[i]; }}"]
-    else:
-        w += [f"    for (int i = 0; i < n; i++) {{ l[i] += s->out[0][i]; r[i] += {rr}[i]; }}"]
-    w += ["}", "",
-          "static const rc_desc_t D = {RC_MAGIC, RC_ABI, " + f'"{pd.stem}", sizeof(st_t), {ins and 2}, {1 if notes else 0}, '
-          + f"{len(params)}, P, init, set, " + ("note" if notes else "0") + ", process, 0, {0}, 0, 0};",
-          'extern "C" RC_EXPORT(D)', ""]
-    files[wrapper.name] = "\n".join(w)
+    files[wrapper.name] = (f"// ripple-sources: *.cpp {rt}/*.c {rt}/*.cpp\n"
+                           f"// ripple-cflags: -I. -I{rt} {' '.join(HV_CFLAGS)}\n" + (made / wrapper.name).read_text())
+    files["ripple_heavy.h"] = (f"/* generated by sdk/tools/currents.py for {pd.name}: its name as a current, and the "
+                               "arena Heavy takes (measured on\n * the computer, and a margin) */\n"
+                               f'#define RC_NAME "{pd.stem}"\n#define HEAP {heap}\n')
     if kept.exists():
         shutil.rmtree(kept)
     kept.mkdir(parents=True)
-    for fn in [*own, wrapper.name]:
+    for fn in [*own, wrapper.name, "ripple_heavy.h"]:
         (kept / fn).write_text(files[fn])
-    print(f"currents: gen/{kept.name}/ made again (commit it): {len(params)} parameters, heap {heap} B")
+    shutil.rmtree(tmp, ignore_errors=True)
+    print(f"currents: gen/{kept.name}/ made again (commit it): {len(info['params'])} parameters, heap {heap} B")
     return wrapper
 
 
-def heavy_runtime(files, log):
+def heavy_runtime(files):
     """Heavy's runtime, hvcc's files with Ripple's (sdk/heavy/static/) over them, shared by every patch:
-    sdk/heavy/runtime/. hvcc writes only the
-    files a patch uses: they are added; another hvcc version's runtime replaces it all."""
-    ver = re.search(r"\d+\.\d+\.\d+", subprocess.run([os.environ.get("HVCC", "hvcc"), "--version"], capture_output=True,
-                                                     text=True).stdout or "")
-    files = {**files, "VERSION": (ver.group(0) if ver else "?") + "\n"}
+    sdk/heavy/runtime/. hvcc writes only the files a patch uses: they are added, and a file changed (sdk/heavy/static/)
+    is written again; another hvcc version's runtime replaces it all."""
+    files = {**files, "VERSION": importlib.metadata.version("hvcc") + "\n"}
     have = {f.name: f.read_text() for f in HV_RUNTIME.iterdir()} if HV_RUNTIME.exists() else {}
-    if any(have.get(fn, text) != text for fn, text in files.items()):
+    if have.get("VERSION", files["VERSION"]) != files["VERSION"]:
         shutil.rmtree(HV_RUNTIME)
         have = {}
-    new = [fn for fn in files if fn not in have]
+    new = [fn for fn, text in files.items() if have.get(fn) != text]
     if not new:
         return
     HV_RUNTIME.mkdir(parents=True, exist_ok=True)
@@ -391,15 +316,17 @@ def heavy_runtime(files, log):
 
 def heavy_heap(files, name, tmp):
     """the arena the patch needs: built on this computer with a counting arena (its pointers are 8 bytes, the FM-1's
-    4: an upper bound), a block of notes and parameters played through it, and a margin"""
+    4: an upper bound), a block of notes and parameters played through it, and a margin. Freestanding, as a current
+    is built (-nostdinc++: <new> is Ripple's, sdk/heavy/static/new)."""
+    from c2ripple import NOTEIN, POOL_KB, IN_QUEUE_KB     # (only where hvcc is: hvcc_lib put it on the path)
+    from hvcc.core.hv2ir.HeavyLangObject import HeavyLangObject
     d = tmp / "measure"
     d.mkdir()
     for fn, text in files.items():
-        if fn != "new":                             # (this computer's C++ library has its own <new>)
-            (d / fn).write_text(text)
+        (d / fn).write_text(text)
     (d / "measure.cpp").write_text(f"""#include <stdio.h>
+#include <new>
 #include "Heavy_{name}.hpp"
-inline void *operator new(size_t, void *p) noexcept {{ return p; }}
 typedef struct {{ char *base; size_t size, used, peak_fail; }} rc_hv_arena_t;
 extern "C" rc_hv_arena_t *rc_hv_arena;
 static char heap[1 << 22];
@@ -407,13 +334,13 @@ alignas(8) static char obj[sizeof(Heavy_{name})];
 int main() {{
   static rc_hv_arena_t a = {{heap, sizeof heap, 0, 0}};
   rc_hv_arena = &a;
-  Heavy_{name} *h = new (obj) Heavy_{name}(44100.0f, {HV_POOL_KB}, {HV_INQ_KB}, 0);
+  Heavy_{name} *h = new (obj) Heavy_{name}(44100.0f, {POOL_KB}, {IN_QUEUE_KB}, 0);
   static float o[2][256], i[2][256];
   float *in[2] = {{i[0], i[1]}}, *out[2] = {{o[0], o[1]}};
   for (int b = 0; b < 200; b++) {{
     HvMessage *m = HV_MESSAGE_ON_STACK(3);
     msg_init(m, 3, 0); msg_setFloat(m, 0, 60.0f + b % 12); msg_setFloat(m, 1, b & 1 ? 0.0f : 100.0f); msg_setFloat(m, 2, 1.0f);
-    h->sendMessageToReceiver(0x{HV_NOTEIN:08X}, 0.0f, m);
+    h->sendMessageToReceiver(0x{HeavyLangObject.get_hash(NOTEIN):08X}, 0.0f, m);
     h->process(in, out, 256);
   }}
   printf("%zu\\n", a.used);
@@ -428,8 +355,8 @@ int main() {{
         if f.suffix not in (".c", ".cpp"):
             continue
         o = f.with_suffix(".o")
-        args = [cxx, "-std=c++11", "-fno-exceptions", "-fno-rtti"] if f.suffix == ".cpp" else [cc, "-std=c99"]
-        r = subprocess.run([*args, "-O1", "-w", *inc, "-c", str(f), "-o", str(o)], capture_output=True, text=True)
+        args = [cxx, "-std=c++11", "-nostdinc++", "-fno-exceptions", "-fno-rtti"] if f.suffix == ".cpp" else [cc, "-std=c99"]
+        r = subprocess.run([*args, "-O1", "-w", *HV_CFLAGS, *inc, "-c", str(f), "-o", str(o)], capture_output=True, text=True)
         if r.returncode:
             sys.stderr.write(r.stderr)
             raise SystemExit(f"currents: {f.name} (Heavy) did not compile on this computer")

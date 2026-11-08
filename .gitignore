@@ -1,2 +1,3 @@
 app/build/
 sdk/build/
+sdk/heavy/__pycache__/

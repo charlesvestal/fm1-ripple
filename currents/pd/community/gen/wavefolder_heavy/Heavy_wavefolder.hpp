@@ -5,15 +5,15 @@
 
 // object includes
 #include "HeavyContext.hpp"
-#include "HvSignalPhasor.h"
 #include "HvSignalVar.h"
 #include "HvSignalLine.h"
+#include "HvSignalPhasor.h"
 #include "HvMath.h"
 
 class Heavy_wavefolder : public HeavyContext {
 
  public:
-  Heavy_wavefolder(float sampleRate, int poolKb=10, int inQueueKb=2, int outQueueKb=0);
+  Heavy_wavefolder(double sampleRate, int poolKb=10, int inQueueKb=2, int outQueueKb=0);
   ~Heavy_wavefolder();
 
   const char *getName() override { return "wavefolder"; }
@@ -53,22 +53,22 @@ class Heavy_wavefolder : public HeavyContext {
 
 
   // static sendMessage functions
-  static void cMsg_LABhLjh4_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cMsg_YxgETOqW_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cMsg_psUpTBs2_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cMsg_haIcVZSw_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cReceive_phDSYo94_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cReceive_mGPo96oM_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cReceive_7eGOD5Q3_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cReceive_gg3If44O_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cReceive_o7jWdFLA_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cMsg_i11tUvHp_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cMsg_CYwdc2VO_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cMsg_F8VEp5uw_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cMsg_630mp6BB_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cReceive_wlqDi0lQ_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cReceive_zMZoxOLV_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cReceive_sU4R4rrI_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cReceive_ar6sOS9p_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cReceive_BRvYUyaZ_sendMessage(HeavyContextInterface *, int, const HvMessage *);
 
   // objects
-  SignalPhasor sPhasor_3d2uRqYT;
-  SignalLine sLine_gdtHg9QU;
-  SignalLine sLine_hcZo5z9g;
-  SignalLine sLine_CcmlAnkP;
-  SignalLine sLine_l4OXbj63;
+  SignalPhasor sPhasor_qGlalrc1;
+  SignalLine sLine_72Pbr8yi;
+  SignalLine sLine_vsfDnxFP;
+  SignalLine sLine_uHzyVAen;
+  SignalLine sLine_l2qkyjcW;
 };
 
 #endif // _HEAVY_CONTEXT_WAVEFOLDER_HPP_

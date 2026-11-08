@@ -23,7 +23,7 @@ typedef enum {
  * Creates a new patch instance.
  * Sample rate should be positive and in Hertz, e.g. 44100.0.
  */
-HeavyContextInterface *hv_pdsaw_new(float sampleRate);
+HeavyContextInterface *hv_pdsaw_new(double sampleRate);
 
 /**
  * Creates a new patch instance.
@@ -37,7 +37,7 @@ HeavyContextInterface *hv_pdsaw_new(float sampleRate);
  *   amount of memory dedicated to holding scheduled messages to the default sendHook.
  *   See getNextSentMessage() for info on accessing these messages. Default is 0 KB.
  */
-HeavyContextInterface *hv_pdsaw_new_with_options(float sampleRate, int poolKb, int inQueueKb, int outQueueKb);
+HeavyContextInterface *hv_pdsaw_new_with_options(double sampleRate, int poolKb, int inQueueKb, int outQueueKb);
 
 /**
  * Free the patch instance.

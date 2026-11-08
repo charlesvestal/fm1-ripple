@@ -177,4 +177,10 @@ static inline int rc_hv_isinf(float x) { return x == x && x - x != 0.0f; }
 #define HV_SPINLOCK_TRY(_x) return (_x = true)
 #define HV_SPINLOCK_RELEASE(_x) (_x = false)
 
+/* the patch's own files (Heavy_NAME.*) say double for the sample rate: a float on the FM-1, which has no double
+ * arithmetic. (va_arg(ap, double) in the runtime is handled where it is read: RC_HV_VA_FLOAT, PATCHES.md) A current is
+ * built freestanding (-nostdinc++, on the computer too), so no C++ library header comes after this to be changed by
+ * it; <new> is Ripple's (new, beside this file). */
+#define double float
+
 #endif // _HEAVY_UTILS_H_

@@ -5,16 +5,16 @@
 
 // object includes
 #include "HeavyContext.hpp"
-#include "HvControlBinop.h"
-#include "HvSignalLine.h"
-#include "HvSignalPhasor.h"
 #include "HvSignalVar.h"
+#include "HvSignalPhasor.h"
 #include "HvMath.h"
+#include "HvSignalLine.h"
+#include "HvControlBinop.h"
 
 class Heavy_chiptune : public HeavyContext {
 
  public:
-  Heavy_chiptune(float sampleRate, int poolKb=10, int inQueueKb=2, int outQueueKb=0);
+  Heavy_chiptune(double sampleRate, int poolKb=10, int inQueueKb=2, int outQueueKb=0);
   ~Heavy_chiptune();
 
   const char *getName() override { return "chiptune"; }
@@ -51,23 +51,23 @@ class Heavy_chiptune : public HeavyContext {
 
 
   // static sendMessage functions
-  static void cBinop_ySAv9Jdb_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cBinop_2otfYm1j_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cBinop_54NHpoIZ_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cMsg_gpns2UVC_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cMsg_xwkwxCN9_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cMsg_8u10LyE0_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cReceive_Nx8dfTdu_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cReceive_VUi2IIEA_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cBinop_ef3R2NWO_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cBinop_x2PvUvpa_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cBinop_qglFjToC_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cMsg_uFvkoasD_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cMsg_DmMdzVie_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cMsg_EvtzN7tr_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cReceive_gumaGlst_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cReceive_IBTLZ9EG_sendMessage(HeavyContextInterface *, int, const HvMessage *);
 
   // objects
-  SignalPhasor sPhasor_tRhPAxzW;
-  SignalLine sLine_sOweG7yM;
-  SignalLine sLine_RGkDHOIj;
-  SignalLine sLine_p1u6ZVKZ;
-  ControlBinop cBinop_ySAv9Jdb;
-  ControlBinop cBinop_2otfYm1j;
-  ControlBinop cBinop_54NHpoIZ;
+  SignalPhasor sPhasor_0Hu4yd9Q;
+  SignalLine sLine_LjH7z3II;
+  SignalLine sLine_Pw3FLdCi;
+  SignalLine sLine_kid45yKh;
+  ControlBinop cBinop_ef3R2NWO;
+  ControlBinop cBinop_x2PvUvpa;
+  ControlBinop cBinop_qglFjToC;
 };
 
 #endif // _HEAVY_CONTEXT_CHIPTUNE_HPP_

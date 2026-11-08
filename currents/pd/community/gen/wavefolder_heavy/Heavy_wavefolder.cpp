@@ -2,7 +2,7 @@
 
 #include "Heavy_wavefolder.hpp"
 
-
+#include <new>
 
 #define Context(_c) static_cast<Heavy_wavefolder *>(_c)
 
@@ -11,7 +11,35 @@
  * C Functions
  */
 
+extern "C" {
+  HV_EXPORT HeavyContextInterface *hv_wavefolder_new(double sampleRate) {
+    // allocate aligned memory
+    void *ptr = hv_malloc(sizeof(Heavy_wavefolder));
+    // ensure non-null
+    if (!ptr) return nullptr;
+    // call constructor
+    new(ptr) Heavy_wavefolder(sampleRate);
+    return Context(ptr);
+  }
 
+  HV_EXPORT HeavyContextInterface *hv_wavefolder_new_with_options(double sampleRate,
+      int poolKb, int inQueueKb, int outQueueKb) {
+    // allocate aligned memory
+    void *ptr = hv_malloc(sizeof(Heavy_wavefolder));
+    // ensure non-null
+    if (!ptr) return nullptr;
+    // call constructor
+    new(ptr) Heavy_wavefolder(sampleRate, poolKb, inQueueKb, outQueueKb);
+    return Context(ptr);
+  }
+
+  HV_EXPORT void hv_wavefolder_free(HeavyContextInterface *instance) {
+    // call destructor
+    Context(instance)->~Heavy_wavefolder();
+    // free memory
+    hv_free(instance);
+  }
+} // extern "C"
 
 
 
@@ -23,13 +51,13 @@
  * Class Functions
  */
 
-Heavy_wavefolder::Heavy_wavefolder(float sampleRate, int poolKb, int inQueueKb, int outQueueKb)
+Heavy_wavefolder::Heavy_wavefolder(double sampleRate, int poolKb, int inQueueKb, int outQueueKb)
     : HeavyContext(sampleRate, poolKb, inQueueKb, outQueueKb) {
-  numBytes += sPhasor_k_init(&sPhasor_3d2uRqYT, 0.0f, sampleRate);
-  numBytes += sLine_init(&sLine_gdtHg9QU);
-  numBytes += sLine_init(&sLine_hcZo5z9g);
-  numBytes += sLine_init(&sLine_CcmlAnkP);
-  numBytes += sLine_init(&sLine_l4OXbj63);
+  numBytes += sPhasor_k_init(&sPhasor_qGlalrc1, 0.0f, sampleRate);
+  numBytes += sLine_init(&sLine_72Pbr8yi);
+  numBytes += sLine_init(&sLine_vsfDnxFP);
+  numBytes += sLine_init(&sLine_uHzyVAen);
+  numBytes += sLine_init(&sLine_l2qkyjcW);
   
 }
 
@@ -44,23 +72,23 @@ HvTable *Heavy_wavefolder::getTableForHash(hv_uint32_t tableHash) {
 void Heavy_wavefolder::scheduleMessageForReceiver(hv_uint32_t receiverHash, HvMessage *m) {
   switch (receiverHash) {
     case 0x6C87328F: { // alt_f
-      mq_addMessageByTimestamp(&mq, m, 0, &cReceive_mGPo96oM_sendMessage);
+      mq_addMessageByTimestamp(&mq, m, 0, &cReceive_zMZoxOLV_sendMessage);
       break;
     }
     case 0x8B2148DD: { // pitch
-      mq_addMessageByTimestamp(&mq, m, 0, &cReceive_phDSYo94_sendMessage);
+      mq_addMessageByTimestamp(&mq, m, 0, &cReceive_wlqDi0lQ_sendMessage);
       break;
     }
     case 0x4C5B5D06: { // scale_f
-      mq_addMessageByTimestamp(&mq, m, 0, &cReceive_7eGOD5Q3_sendMessage);
+      mq_addMessageByTimestamp(&mq, m, 0, &cReceive_sU4R4rrI_sendMessage);
       break;
     }
     case 0xCE9531B0: { // shape_f
-      mq_addMessageByTimestamp(&mq, m, 0, &cReceive_gg3If44O_sendMessage);
+      mq_addMessageByTimestamp(&mq, m, 0, &cReceive_ar6sOS9p_sendMessage);
       break;
     }
     case 0x32F5C118: { // slfo
-      mq_addMessageByTimestamp(&mq, m, 0, &cReceive_o7jWdFLA_sendMessage);
+      mq_addMessageByTimestamp(&mq, m, 0, &cReceive_BRvYUyaZ_sendMessage);
       break;
     }
     default: return;
@@ -136,60 +164,60 @@ int Heavy_wavefolder::getParameterInfo(int index, HvParameterInfo *info) {
  */
 
 
-void Heavy_wavefolder::cMsg_LABhLjh4_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *const n) {
+void Heavy_wavefolder::cMsg_i11tUvHp_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *const n) {
   HvMessage *m = nullptr;
   m = HV_MESSAGE_ON_STACK(2);
   msg_init(m, 2, msg_getTimestamp(n));
   msg_setElementToFrom(m, 0, n, 0);
   msg_setFloat(m, 1, 10.0f);
-  sLine_onMessage(_c, &Context(_c)->sLine_l4OXbj63, 0, m, NULL);
+  sLine_onMessage(_c, &Context(_c)->sLine_l2qkyjcW, 0, m, NULL);
 }
 
-void Heavy_wavefolder::cMsg_YxgETOqW_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *const n) {
+void Heavy_wavefolder::cMsg_CYwdc2VO_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *const n) {
   HvMessage *m = nullptr;
   m = HV_MESSAGE_ON_STACK(2);
   msg_init(m, 2, msg_getTimestamp(n));
   msg_setElementToFrom(m, 0, n, 0);
   msg_setFloat(m, 1, 10.0f);
-  sLine_onMessage(_c, &Context(_c)->sLine_CcmlAnkP, 0, m, NULL);
+  sLine_onMessage(_c, &Context(_c)->sLine_uHzyVAen, 0, m, NULL);
 }
 
-void Heavy_wavefolder::cMsg_psUpTBs2_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *const n) {
+void Heavy_wavefolder::cMsg_F8VEp5uw_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *const n) {
   HvMessage *m = nullptr;
   m = HV_MESSAGE_ON_STACK(2);
   msg_init(m, 2, msg_getTimestamp(n));
   msg_setElementToFrom(m, 0, n, 0);
   msg_setFloat(m, 1, 10.0f);
-  sLine_onMessage(_c, &Context(_c)->sLine_hcZo5z9g, 0, m, NULL);
+  sLine_onMessage(_c, &Context(_c)->sLine_vsfDnxFP, 0, m, NULL);
 }
 
-void Heavy_wavefolder::cMsg_haIcVZSw_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *const n) {
+void Heavy_wavefolder::cMsg_630mp6BB_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *const n) {
   HvMessage *m = nullptr;
   m = HV_MESSAGE_ON_STACK(2);
   msg_init(m, 2, msg_getTimestamp(n));
   msg_setElementToFrom(m, 0, n, 0);
   msg_setFloat(m, 1, 10.0f);
-  sLine_onMessage(_c, &Context(_c)->sLine_gdtHg9QU, 0, m, NULL);
+  sLine_onMessage(_c, &Context(_c)->sLine_72Pbr8yi, 0, m, NULL);
 }
 
-void Heavy_wavefolder::cReceive_phDSYo94_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
-  sPhasor_k_onMessage(_c, &Context(_c)->sPhasor_3d2uRqYT, 0, m);
+void Heavy_wavefolder::cReceive_wlqDi0lQ_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
+  sPhasor_k_onMessage(_c, &Context(_c)->sPhasor_qGlalrc1, 0, m);
 }
 
-void Heavy_wavefolder::cReceive_mGPo96oM_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
-  cMsg_LABhLjh4_sendMessage(_c, 0, m);
+void Heavy_wavefolder::cReceive_zMZoxOLV_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
+  cMsg_i11tUvHp_sendMessage(_c, 0, m);
 }
 
-void Heavy_wavefolder::cReceive_7eGOD5Q3_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
-  cMsg_psUpTBs2_sendMessage(_c, 0, m);
+void Heavy_wavefolder::cReceive_sU4R4rrI_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
+  cMsg_F8VEp5uw_sendMessage(_c, 0, m);
 }
 
-void Heavy_wavefolder::cReceive_gg3If44O_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
-  cMsg_haIcVZSw_sendMessage(_c, 0, m);
+void Heavy_wavefolder::cReceive_ar6sOS9p_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
+  cMsg_630mp6BB_sendMessage(_c, 0, m);
 }
 
-void Heavy_wavefolder::cReceive_o7jWdFLA_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
-  cMsg_YxgETOqW_sendMessage(_c, 0, m);
+void Heavy_wavefolder::cReceive_BRvYUyaZ_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
+  cMsg_CYwdc2VO_sendMessage(_c, 0, m);
 }
 
 
@@ -246,7 +274,7 @@ int Heavy_wavefolder::process(float **inputBuffers, float **outputBuffers, int n
     __hv_zero_f(VOf(O0));
 
     // process all signal functions
-    __hv_phasor_k_f(&sPhasor_3d2uRqYT, VOf(Bf0));
+    __hv_phasor_k_f(&sPhasor_qGlalrc1, VOf(Bf0));
     __hv_var_k_f(VOf(Bf1), 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f);
     __hv_sub_f(VIf(Bf0), VIf(Bf1), VOf(Bf1));
     __hv_abs_f(VIf(Bf1), VOf(Bf1));
@@ -261,12 +289,12 @@ int Heavy_wavefolder::process(float **inputBuffers, float **outputBuffers, int n
     __hv_var_k_f(VOf(Bf4), -0.166666666666667f, -0.166666666666667f, -0.166666666666667f, -0.166666666666667f, -0.166666666666667f, -0.166666666666667f, -0.166666666666667f, -0.166666666666667f);
     __hv_fma_f(VIf(Bf2), VIf(Bf4), VIf(Bf1), VOf(Bf1));
     __hv_fma_f(VIf(Bf0), VIf(Bf3), VIf(Bf1), VOf(Bf1));
-    __hv_line_f(&sLine_gdtHg9QU, VOf(Bf3));
-    __hv_line_f(&sLine_hcZo5z9g, VOf(Bf0));
+    __hv_line_f(&sLine_72Pbr8yi, VOf(Bf3));
+    __hv_line_f(&sLine_vsfDnxFP, VOf(Bf0));
     __hv_var_k_f(VOf(Bf4), 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f);
     __hv_fma_f(VIf(Bf3), VIf(Bf0), VIf(Bf4), VOf(Bf4));
-    __hv_line_f(&sLine_CcmlAnkP, VOf(Bf0));
-    __hv_line_f(&sLine_l4OXbj63, VOf(Bf3));
+    __hv_line_f(&sLine_uHzyVAen, VOf(Bf0));
+    __hv_line_f(&sLine_l2qkyjcW, VOf(Bf3));
     __hv_add_f(VIf(Bf0), VIf(Bf3), VOf(Bf3));
     __hv_fma_f(VIf(Bf1), VIf(Bf4), VIf(Bf3), VOf(Bf3));
     __hv_var_k_f(VOf(Bf4), 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f);

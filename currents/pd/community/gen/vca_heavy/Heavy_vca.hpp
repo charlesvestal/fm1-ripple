@@ -5,13 +5,13 @@
 
 // object includes
 #include "HeavyContext.hpp"
-#include "HvMath.h"
 #include "HvSignalLine.h"
+#include "HvMath.h"
 
 class Heavy_vca : public HeavyContext {
 
  public:
-  Heavy_vca(float sampleRate, int poolKb=10, int inQueueKb=2, int outQueueKb=0);
+  Heavy_vca(double sampleRate, int poolKb=10, int inQueueKb=2, int outQueueKb=0);
   ~Heavy_vca();
 
   const char *getName() override { return "vca"; }
@@ -47,11 +47,11 @@ class Heavy_vca : public HeavyContext {
 
 
   // static sendMessage functions
-  static void cMsg_1mBteD6Q_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cReceive_RrHsKfFy_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cMsg_ePMrOpv9_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cReceive_pe6k2M46_sendMessage(HeavyContextInterface *, int, const HvMessage *);
 
   // objects
-  SignalLine sLine_1CROWd9N;
+  SignalLine sLine_UktGTMEm;
 };
 
 #endif // _HEAVY_CONTEXT_VCA_HPP_
