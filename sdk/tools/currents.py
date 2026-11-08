@@ -213,6 +213,8 @@ def heavy_rewrite(text, fname, name):
     text = text.replace("virtual ~", "~")           # (no deleting destructors: they call operator delete)
     if fname == f"Heavy_{name}.cpp":                # its C functions allocate with new: the current builds it itself
         text = re.sub(r'extern "C" \{.*?\} // extern "C"', "", text, flags=re.S)
+    if fname == "HvUtils.c":                        # the hash reads a word at a time from any address: the FM-1
+        text = text.replace("#if HV_EMSCRIPTEN", "#if 1 /* the FM-1: no unaligned loads */")   # faults; byte by byte
     if fname == "HvHeavy.cpp":                      # (and frees with delete)
         text = text.replace("  delete c;", "  (void) c;")
     return text

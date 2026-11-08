@@ -29,7 +29,7 @@ hv_uint32_t hv_string_to_hash(const char *str) {
   hv_uint32_t x = len; // seed (0) ^ len
 
   while (len >= 4) {
-#if HV_EMSCRIPTEN
+#if 1 /* the FM-1: no unaligned loads */
     hv_uint32_t k = str[0] | (str[1] << 8) | (str[2] << 16) | (str[3] << 24);
 #else
     hv_uint32_t k = *((hv_uint32_t *) str);
