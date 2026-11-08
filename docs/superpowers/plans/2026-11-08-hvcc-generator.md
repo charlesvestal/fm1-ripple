@@ -15,6 +15,7 @@
 - Current names stay as released in 0.6.1 (`macro-*`, plain Pd names).
 - The wrapper comes from a custom generator rendering Jinja2 templates, not built line by line (hvcc's maintainer's advice, relayed by the user).
 - hvcc is used as a Python library (`hvcc.compile_dataflow`), not run as an external tool (same source).
+- Pd currents' generated C is not committed: the build installs the pinned hvcc and regenerates it, seeded so the output is identical every time ("Yes" to the question why generated C was committed). Faust's C stays committed until the release builder has a working Faust.
 
 ---
 
@@ -25,7 +26,7 @@
 - **Today's Pd path** (`pd_to_cc` in `currents.py`): runs hvcc for C, rewrites every file with `heavy_rewrite` (regexes: `double` to `float`, float literals, `va_arg`, removing `#include <new>` and `<math.h>`, `virtual ~`, the `extern "C"` block in `Heavy_NAME.cpp`, `delete c`, the SSE fence, the hash), scrapes parameters, channels and tables out of `Heavy_NAME.cpp/.hpp` with regexes, then writes the wrapper `NAME_current.cc` line by line from Python. Heavy's shared runtime is kept in `sdk/heavy/runtime/`; each patch's own files and wrapper in `gen/NAME_heavy/` beside it.
 - **Today's Faust path** (`faust_to_c`): runs `faust -lang c -single`, swaps `<math.h>` for `faust_shim.h`, and scrapes `addHorizontalSlider` calls and `getNumInputs` with regexes.
 - **hvcc external generators:** a Python module with one subclass of `hvcc.types.compiler.Generator`, loaded with `hvcc PATCH -G MODULE` (hvcc adds the current directory to `sys.path`; set `PYTHONPATH` to load it from elsewhere). Its `compile()` gets `c_src_dir` (hvcc's C), `out_dir`, `externs: ExternInfo`, `patch_name`, `num_input_channels`, `num_output_channels` and `copyright`. `ExternInfo.parameters.inParam` is a list of `(name, IRReceiver)`, where `IRReceiver.hash` is `"0xF89F9F3E"` and `IRReceiver.attributes` is `{'min': 100.0, 'max': 8000.0, 'default': 1200.0, 'type': 'float'}`. `ExternInfo.midi.inMidi` lists names such as `'__hv_notein'`. `ExternInfo.tables` is a list of `(name, IRTable)` for `@hv_table` tables, with `IRTable.hash`. Reference: hvcc's `docs/generators/custom.md` and `hvcc/generators/c2owl/c2owl.py`.
-- **Tools on this Mac:** hvcc in a venv, `uv venv -p 3.12 ~/.venvs/hvcc && uv pip install -p ~/.venvs/hvcc/bin/python hvcc==0.17.3 jinja2`. hvcc needs Python 3.10 or newer, and the system `python3` here is 3.9: run `currents.py` with `~/.venvs/hvcc/bin/python` (written `$PYH` below: `export PYH=~/.venvs/hvcc/bin/python`) when Pd patches should be compiled again. With a Python that has no hvcc, `currents.py` builds Pd currents from the kept files, as the release builder does. Faust is `/opt/homebrew/bin/faust`. The FM-1 toolchain runs in podman: `export PATH=~/github/fm1-parent/bin:$PATH` (and `podman machine start` once).
+- **Tools on this Mac:** hvcc in a venv, `uv venv -p 3.12 ~/.venvs/hvcc && uv pip install -p ~/.venvs/hvcc/bin/python hvcc==0.17.3 jinja2`. hvcc needs Python 3.10 or newer, and the system `python3` here is 3.9: run `currents.py` with `~/.venvs/hvcc/bin/python` (written `$PYH` below: `export PYH=~/.venvs/hvcc/bin/python`) when Pd patches should be compiled again. Until Task 6, with a Python that has no hvcc, `currents.py` builds Pd currents from the kept files, as the release builder does; from Task 6 on, Pd currents always need hvcc. Faust is `/opt/homebrew/bin/faust`. The FM-1 toolchain runs in podman: `export PATH=~/github/fm1-parent/bin:$PATH` (and `podman machine start` once).
 - **Tests:** `sh tests/run_tests.sh` (with `PYTHON=/opt/homebrew/bin/python3.14`) runs everything; `sh tests/pd_examples.sh` runs the four Pd droplets.
 
 ## Files
@@ -689,7 +690,135 @@ git commit -m "Faust currents: parameters and channels from faust -json, fields 
 
 ---
 
-### Task 6: Proof on other machines and patches, and the docs
+### Task 6: Regenerate Pd currents at build time, the same every time
+
+**Goal:** Pd currents' generated C (`gen/NAME_heavy/` and the hvcc-written runtime) is no longer committed: every build compiles the patches with the pinned hvcc, seeded so its output is identical run to run; the release workflow and the tests install hvcc themselves.
+
+**Files:**
+- Modify: `sdk/tools/currents.py` (`hvcc_lib`, `pd_to_cc`, `heavy_runtime`, `HV_RUNTIME`)
+- Create: `sdk/heavy/requirements.txt`
+- Modify: `build.sh`, `tests/run_tests.sh`, `.github/workflows/release.yml`, `.gitignore` (if needed), `sdk/README.md` ("In Pd")
+- Delete from git: `currents/pd/gen/`, `currents/pd/community/gen/`, `sdk/heavy/runtime/`
+
+**Acceptance Criteria:**
+- [ ] Compiling `currents/pd/pdsaw.pd` twice gives byte-identical output (every generated file the same)
+- [ ] `git ls-files currents/pd sdk/heavy | grep -c "_heavy/\|sdk/heavy/runtime/"` → `0`; `sdk/heavy/static/`, the `.pd` files and `heavylib` are still committed
+- [ ] With a Python that has no hvcc (or another version than `sdk/heavy/requirements.txt` pins), building a Pd current stops with a message saying `pip install -r sdk/heavy/requirements.txt`
+- [ ] The release workflow installs `sdk/heavy/requirements.txt` before `./build.sh`; `tests/run_tests.sh` uses a Python with hvcc
+- [ ] The snapshot still matches the baseline; all tests pass
+
+**Verify:** `$PYH tests/host/determinism.py` → `same`, then `PYTHON=$PYH sh tests/run_tests.sh` → `all tests passed`
+
+**Steps:**
+
+- [ ] **Step 1: Pin hvcc**
+
+`sdk/heavy/requirements.txt`:
+```
+# hvcc, the Pd compiler: sdk/heavy/static/ is made for this version (sdk/heavy/PATCHES.md)
+hvcc==0.17.3
+```
+
+In `hvcc_lib()` (Task 4), check the version and stop with the remedy:
+
+```python
+    from importlib.metadata import version
+    want = (SDK / "heavy" / "requirements.txt").read_text().split("hvcc==")[1].split()[0]
+    if version("hvcc") != want:
+        raise SystemExit(f"currents: hvcc {version('hvcc')} here, Ripple's Heavy files are for {want}: "
+                         "pip install -r sdk/heavy/requirements.txt")
+```
+
+and when `import hvcc` fails, stop the same way (no more falling back to kept files):
+
+```python
+        raise SystemExit(f"currents: Pd currents need hvcc in this Python ({sys.version.split()[0]}; hvcc needs "
+                         "3.10 or newer): pip install -r sdk/heavy/requirements.txt")
+```
+
+- [ ] **Step 2: Seed hvcc**
+
+hvcc names objects with random IDs and gives `[random]` a random seed, from Python's `random` module and two private `random.Random()` instances (`hvcc/interpreters/pd2hv/PdObject.py` `PdObject.__RANDOM`, `hvcc/core/hv2ir/HeavyLangObject.py` `HeavyLangObject.__RANDOM`). Seed all three before each patch, so each patch's output depends only on the patch:
+
+```python
+def hvcc_seed():
+    """hvcc's random object names and [random] seeds, the same every run (hvcc 0.17.3's three generators: the
+    random module's and two classes' own; Python mangles their private names)"""
+    import random
+    from hvcc.interpreters.pd2hv.PdObject import PdObject
+    from hvcc.core.hv2ir.HeavyLangObject import HeavyLangObject
+    random.seed(0)
+    PdObject._PdObject__RANDOM.seed(0)
+    HeavyLangObject._HeavyLangObject__RANDOM.seed(0)
+```
+
+Call it right before `compile_dataflow(...)` in `pd_to_cc`. If hvcc 0.17.3 has other sources of randomness, the determinism test (Step 3) finds them: `grep -rn "random" $(dirname hvcc)` and seed those too.
+
+- [ ] **Step 3: A determinism test**
+
+`tests/host/determinism.py`:
+```python
+#!/usr/bin/env python3
+# SPDX-License-Identifier: MPL-2.0
+# Copyright (C) 2026 Charles Vestal
+"""A Pd patch compiled twice gives the same files (currents.py seeds hvcc): prints "same", or the files that differ.
+Run with a Python that has hvcc."""
+import filecmp, shutil, subprocess, sys, tempfile
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+runs = []
+for _ in range(2):
+    d = Path(tempfile.mkdtemp(prefix="det-"))
+    shutil.copy(ROOT / "currents/pd/pdpoly.pd", d)
+    shutil.copytree(ROOT / "currents/pd/lib", d / "lib")
+    subprocess.run([sys.executable, str(ROOT / "sdk/tools/currents.py"), str(d / "pdpoly.pd"), "--host", str(d / "so")],
+                   cwd=ROOT, check=True, capture_output=True)
+    runs.append(d / "gen" / "pdpoly_heavy")
+cmp = filecmp.dircmp(*runs)
+bad = cmp.diff_files + cmp.left_only + cmp.right_only
+print("same" if not bad else "differ: " + " ".join(bad))
+sys.exit(1 if bad else 0)
+```
+
+(pdpoly uses an abstraction four times, the case most likely to show random names.) Adjust the `gen/` path to wherever Step 4 puts generated files.
+
+- [ ] **Step 4: Generated files into the build tree**
+
+Generated C goes under `sdk/build/heavy/` (already ignored by git; inside the repository, so the FM-1 toolchain's container sees it): each patch's files in `sdk/build/heavy/NAME/`, the runtime in `sdk/build/heavy/runtime/`: all of hvcc's `ir2c/static` files (from the installed package, not only the ones a patch uses, so the runtime never depends on which patches were built) with `static/` laid over them, made again when its hvcc version or `static/` changes. Change `HV_RUNTIME` and the `kept` folder in `pd_to_cc` accordingly; remove the "made again (commit it)" messages and `heavy_runtime`'s VERSION logic (the version is pinned now). `extras()` resolves `ripple-sources` relative to the wrapper: the relative paths from `sdk/build/heavy/NAME/` to `sdk/build/heavy/runtime/` are `../runtime/*.c` and `../runtime/*.cpp`.
+
+Then remove the committed copies: `git rm -rq currents/pd/gen currents/pd/community/gen sdk/heavy/runtime`.
+
+- [ ] **Step 5: The builds install hvcc**
+
+`build.sh`: before the first `currents.py` call, check that `$PY` has the pinned hvcc, and say how to get it:
+
+```sh
+"$PY" -c 'import hvcc' 2>/dev/null || { echo "build.sh: $PY has no hvcc (pip install -r sdk/heavy/requirements.txt)"; exit 1; }
+```
+
+`.github/workflows/release.yml`, in the `build:` script before `./build.sh`: `python3 -m pip install -q -r sdk/heavy/requirements.txt`. `tests/run_tests.sh` runs `build.sh` through `$PYTHON`; on this Mac use `PYTHON=$PYH` (the hvcc venv also needs Pillow for the firmware's fonts: `uv pip install -p $PYH pillow`; check `build.sh`'s Pillow and raqm check passes with it, else install hvcc into the Python the firmware build uses instead).
+
+- [ ] **Step 6: Docs**
+
+`sdk/README.md`, "In Pd": replace the paragraph about keeping Heavy's C ("The build keeps Heavy's C for each patch…" / "Commit both…") with: the build compiles each patch with hvcc every time (`pip install -r sdk/heavy/requirements.txt`, hvcc 0.17.3, Python 3.10 or newer), the same output every run, nothing generated is committed; Ripple's changes to Heavy's runtime are `sdk/heavy/static/` (PATCHES.md).
+
+- [ ] **Step 7: Compare and commit**
+
+Run `$PYH tests/host/determinism.py` → `same`; `$PYH tests/host/currents_snapshot.py --out /tmp/snap.json` and compare with the baseline (Task 2's Verify) → no differences; `PYTHON=$PYH sh tests/run_tests.sh` → `all tests passed`.
+
+```bash
+git add -A sdk build.sh tests .github/workflows/release.yml currents/pd
+git commit -m "Pd currents compiled at build time with the pinned hvcc, seeded: the same every run; no generated C committed"
+```
+
+```json:metadata
+{"files": ["sdk/tools/currents.py", "sdk/heavy/requirements.txt", "build.sh", "tests/run_tests.sh", "tests/host/determinism.py", ".github/workflows/release.yml", "sdk/README.md"], "verifyCommand": "$PYH tests/host/determinism.py", "acceptanceCriteria": ["pdpoly compiled twice is byte-identical", "no _heavy/ or sdk/heavy/runtime files in git", "no or wrong hvcc stops with the pip remedy", "release workflow and tests install hvcc", "snapshot matches baseline; all tests pass"], "modelTier": "standard"}
+```
+
+---
+
+### Task 7: Proof on other machines and patches, and the docs
 
 **Goal:** The new path proven on Linux x86 (the release builder) and on the 44 community patches tried for 0.6, and the SDK docs saying how it works now.
 
@@ -698,7 +827,7 @@ git commit -m "Faust currents: parameters and channels from faust -json, fields 
 - Delete: `tests/host/currents_baseline.json`? No: keep it, and add the snapshot comparison to `tests/run_tests.sh` so a later change can't silently alter a current
 
 **Acceptance Criteria:**
-- [ ] In a Debian amd64 container, all Pd currents build for the host from the kept files
+- [ ] In a Debian amd64 container, with hvcc installed from `sdk/heavy/requirements.txt`, all Pd currents build for the host
 - [ ] Of boochow's, MOD's and Wasted Audio's 44 patches, at least the same 39 build as with 0.6 (list them: both runs side by side)
 - [ ] `tests/run_tests.sh` has a step comparing the snapshot with the baseline
 - [ ] The docs describe the generator and `static/`, and nothing describes regex rewriting
@@ -712,7 +841,8 @@ git commit -m "Faust currents: parameters and channels from faust -json, fields 
 Run:
 ```bash
 docker run --rm --platform linux/amd64 -v "$PWD":/w -w /w debian:bookworm-slim sh -c \
-  "apt-get update -qq >/dev/null && apt-get install -y -qq gcc g++ python3 >/dev/null 2>&1 && \
+  "apt-get update -qq >/dev/null && apt-get install -y -qq gcc g++ python3 python3-pip >/dev/null 2>&1 && \
+   pip install -q --break-system-packages -r sdk/heavy/requirements.txt && \
    python3 sdk/tools/currents.py currents/pd currents/pd/community --host /tmp/h 2>&1 | grep -cE '^host '"
 ```
 Expected: `11`.
@@ -759,16 +889,14 @@ The baseline's `state` for Pd currents includes the measured heap: if the measur
 
 - [ ] **Step 4: The docs**
 
-`sdk/README.md`, "In Pd": replace the paragraph starting "The build keeps Heavy's C for each patch" with:
+`sdk/README.md`, "In Pd": make the paragraph about how a patch is built (after Task 6's rewrite of it) say:
 
 ```markdown
 The build runs hvcc with Ripple's own generator (`sdk/heavy/c2ripple.py`, `-G c2ripple`), which writes the
 current's wrapper from what hvcc knows of the patch. Heavy's runtime needs a few changes for the FM-1 (no
 `double`, no C library, no unaligned loads): `sdk/heavy/static/` holds those files, and `sdk/heavy/PATCHES.md`
-says what each change is. The build keeps Heavy's C for each patch in `gen/NAME_heavy/` beside it, and the
-runtime, shared by every patch, in `sdk/heavy/runtime/`. Commit both: a computer without hvcc builds the patch
-from them. The runtime is Enzien Audio's and Wasted Audio's, under the ISC licence; the C made from your patch is
-yours. Put a `LICENSE` beside the patch and the build writes its copyright lines into that C.
+says what each change is. The runtime is Enzien Audio's and Wasted Audio's, under the ISC licence; the C made from
+your patch is yours. Put a `LICENSE` beside the patch and the build writes its copyright lines into that C.
 ```
 
 `LICENSING.md`: in the Heavy runtime row, after "made freestanding for the FM-1", say "by the files in `sdk/heavy/static/` (`sdk/heavy/PATCHES.md`)" in place of "by `sdk/tools/currents.py`". `currents.py`'s docstring: the Pd paragraph says "through hvcc and Ripple's generator (sdk/heavy/c2ripple.py)", and drops "made freestanding by sdk/heavy/HvUtils.h".
@@ -790,6 +918,7 @@ git commit -m "Currents: the snapshot compared in the tests; the docs say how Pd
 
 ## Self-review notes
 
+- Task 6 (regenerate at build time) runs after Task 4 and before Task 7, so Task 7 proves the final state.
 - The user's three points are covered: the generator replaces the Pd scraping and wrapper building (Tasks 3–4); the runtime changes become named, documented files (Task 2); Faust gets the supported route (Task 5).
 - Order matters: the baseline (Task 1) must be taken before anything changes; Task 2 changes no output; Task 4 is the switch; Task 5 is independent of 2–4 but uses the same baseline.
 - `RC_NAME`, `HEAP` and `ripple_heavy.h` are defined in Task 4 and used by the template in Task 3. Task 3's diff step ignores the descriptor name and `HEAP` for that reason.
