@@ -28,6 +28,7 @@ mkdir -p app/build/scenarios/examples
 run examples env RIPPLE_CURRENTS=app/build/currents-host app/build/host/ripple_host tests/scenarios/examples.txt \
     app/build/scenarios/examples
 run selftest sh tests/selftest.sh
+run pd-examples sh tests/pd_examples.sh
 if command -v emcc >/dev/null 2>&1 && command -v node >/dev/null 2>&1; then
     run emu sh -c "sh build.sh --web && node tests/host/emu_test.mjs app/build/emu/app.wasm"
     run emu-upload sh -c "python3 sdk/tools/currents.py tests/host/webbeep.c --web-module app/build/tests >/dev/null &&

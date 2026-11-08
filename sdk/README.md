@@ -83,7 +83,8 @@ logue oscillator has no envelope of its own, so it sounds as long as the current
 Put the patch's abstractions in a `lib` folder beside it, so that the build doesn't take them for currents.
 Wasted Audio's heavylib (`hv.reverb~`, `hv.compressor~`, `hv.lfo` and the rest) is in the SDK, and patches can use
 it without copying it.
-`currents/pd/pdpoly.pd` is an example: four voices from `[poly 4 1]`, each one `lib/pdvoice.pd`.
+`currents/pd/community/` has patches by others, and `examples/pd/` droplets that play them. `currents/pd/pdpoly.pd`
+is an example of your own: four voices from `[poly 4 1]`, each one `lib/pdvoice.pd`.
 
 A few things are different from Pd on a computer:
 

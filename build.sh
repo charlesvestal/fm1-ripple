@@ -20,9 +20,9 @@ mkdir -p app/build/builtin
 cp -R builtin/. app/build/builtin/
 "$PY" sdk/tools/currents.py currents/*.dsp currents/*.c currents/*.cc --out app/build/builtin/currents
 # currents/extra: not built in (no room in the firmware): files for the disk, on the release (app/build/extra)
-"$PY" sdk/tools/currents.py currents/extra/*.cc --out app/build/extra
+"$PY" sdk/tools/currents.py currents/extra/*.cc currents/pd/community --out app/build/extra   # (and the community Pd patches)
 case " $* " in
     *" --host "*) "$PY" sdk/tools/currents.py currents/*.dsp currents/*.c currents/*.cc currents/extra/*.cc \
-                      --host app/build/currents-host ;;
+                      currents/pd/community --host app/build/currents-host ;;
 esac
 exec "$PY" base/tools/build.py app "$@"

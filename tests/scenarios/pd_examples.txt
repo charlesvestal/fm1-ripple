@@ -1,0 +1,82 @@
+# The droplets on Pd patches (examples/pd), made into a disk by tests/pd_examples.sh: each started, played and
+# turned, with no error and sound. Screenshots NAME.png.
+wait 600
+data app/build/scenarios/pd_examples/pd.img 0x97000
+reboot
+wait 600
+start robot
+wait 400
+expect error 0
+peakreset
+key 7 down
+key 11 down
+key 14 down
+wait 1500
+turn K1 3
+turn K2 2
+turn K3 2
+wait 800
+expect peak_db_min -40
+shot robot.png
+key 7 up
+key 11 up
+key 14 up
+wait 300
+expect error 0
+start chip
+wait 400
+expect error 0
+peakreset
+key 7 down
+key 11 down
+key 14 down
+wait 1500
+turn K1 3
+turn K2 2
+turn K3 2
+wait 800
+expect peak_db_min -40
+shot chip.png
+key 7 up
+key 11 up
+key 14 up
+wait 300
+expect error 0
+start fold
+wait 400
+expect error 0
+peakreset
+key 7 down
+key 11 down
+key 14 down
+wait 1500
+turn K1 3
+turn K2 2
+turn K3 2
+wait 800
+expect peak_db_min -40
+shot fold.png
+key 7 up
+key 11 up
+key 14 up
+wait 300
+expect error 0
+start mono
+wait 400
+expect error 0
+peakreset
+key 7 down
+key 11 down
+key 14 down
+wait 1500
+turn K1 3
+turn K2 2
+turn K3 2
+wait 800
+expect peak_db_min -40
+shot mono.png
+key 7 up
+key 11 up
+key 14 up
+wait 300
+expect error 0

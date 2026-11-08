@@ -236,6 +236,10 @@ Among the voices are seventeen of Mutable Instruments Plaits' engines (`plaits-v
 the rest): K1–K3 are Plaits' harmonics, timbre and morph. Three more (`plaits-wave`, `plaits-dx`, `plaits-speech`)
 are on each release, to copy into `currents` on the disk in disk mode.
 
+Each release also has four droplets that play Pd patches from the community (`robot`, `chip`, `fold`, `mono`) and
+the currents they use. For what each one does, see
+[Droplets on Pd patches](https://github.com/charlesvestal/fm1-ripple/blob/main/examples/pd/README.md).
+
 The top of the screen shows how busy the sound is and how much room is left for currents. A current that does not
 fit says so at the bottom, and its slot stays empty.
 
