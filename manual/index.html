@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RIPPLE: Ripple</title>
+<meta name="description" content="Ripple for RIPPLE, a firmware for the M-VAVE FM-1.">
+<style>
+/* paper and ink: warm white paper, ink-blue type, vermilion for what is played, mustard for asides; a shade of the
+   paper for code and callouts (CTL-1's; a firmware may restyle its site) */
+:root {
+  --paper: #fbf8f1; --sheet: #efe9dc; --rule: #ddd4c2; --ink: #1e2b5a; --muted: #5d6585;
+  --hot: #e5482e; --hot-t: #f8d3c9; --cool: #d9a21b; --cool-t: #f5e4b8;
+  --hot-ink: #c23a22;                                 /* the vermilion as text: 4.5:1 on the paper */
+  color-scheme: light;
+}
+body {
+  background: var(--paper); color: var(--ink); margin: 0;
+  font: 400 17px/1.6 "Helvetica Neue", Helvetica, Arial, sans-serif;
+  padding-inline: 16px; padding-block: 32px 64px;
+}
+main { max-width: 46rem; margin: 0 auto; }
+.page > .site { max-width: 46rem; margin-inline: auto; }
+main:focus { outline: none; }
+h1, h2, h3 { font-family: inherit; text-wrap: balance; line-height: 1.2; }
+h1 { font-size: 2.2rem; font-weight: 700; margin: 0 0 .4rem; letter-spacing: .02em; }
+h2 { font-size: 1.3rem; font-weight: 700; margin: 3rem 0 .8rem; padding-top: .8rem; border-top: 2px solid var(--ink); }
+h2 .num { color: var(--hot); margin-right: .5em; font-variant-numeric: tabular-nums; }
+h3 { font-size: 1.1rem; font-weight: 700; margin: 2rem 0 .5rem; }
+p, li { max-width: 65ch; }
+p { margin: 0 0 1rem; }
+ul, ol { padding-left: 1.3rem; margin: 0 0 1rem; }
+li { margin: .2rem 0; }
+li::marker { color: var(--hot); }
+strong { font-weight: 700; }
+a { color: var(--ink); text-decoration-color: var(--hot); text-decoration-thickness: 2px; text-underline-offset: 3px; }
+a:hover { background: var(--hot-t); }
+:focus-visible { outline: 3px solid var(--hot-ink); outline-offset: 2px; }
+.skip { position: absolute; left: 16px; top: -100px; background: var(--ink); color: var(--paper); padding: 8px 14px; border-radius: 0 0 6px 6px; z-index: 1; }
+.skip:focus { top: 0; }
+code, pre { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .86em; }
+code { background: var(--sheet); padding: .08em .35em; border-radius: 3px; }
+pre { background: var(--sheet); border-radius: 6px; padding: 14px 16px; overflow-x: auto; line-height: 1.45; margin: 0 0 1.2rem; }
+pre code { background: none; padding: 0; font-size: inherit; }
+hr { display: none; }
+.table { overflow-x: auto; margin: 0 0 1.3rem; }
+table { border-collapse: collapse; width: 100%; font-size: .95rem; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; vertical-align: top; padding: .45rem .7rem .45rem 0; border-bottom: 1px solid var(--rule); }
+th { font-weight: 700; text-transform: uppercase; letter-spacing: .06em; font-size: .78rem; color: var(--muted); border-bottom: 2px solid var(--ink); }
+td:first-child { white-space: nowrap; }
+.lede { margin-bottom: 1.6rem; }
+.status { background: var(--sheet); border-radius: 6px; padding: 12px 16px; }
+.status p { margin: 0; }
+.site { display: flex; flex-wrap: wrap; align-items: baseline; gap: .3rem 1.2rem; margin: 0 0 1.6rem; padding-bottom: .5rem; border-bottom: 2px solid var(--ink); }
+.site .home { font-size: 1.1rem; font-weight: 700; letter-spacing: .04em; color: var(--ink); text-decoration: none; }
+.site .home:hover { color: var(--hot-ink); background: none; }
+.site nav { margin-left: auto; display: flex; flex-wrap: wrap; gap: .2rem 1rem; font-size: .92rem; }
+.site nav a { color: var(--ink); text-underline-offset: 3px; }
+.site nav a[aria-current] { text-decoration: none; color: var(--hot-ink); }
+a.home { color: inherit; text-decoration: none; }
+a.home:hover { background: none; color: var(--hot-ink); }
+main > a.home { display: inline-block; font-size: .9rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 .4rem; }
+.callout { border-left: 4px solid var(--cool); background: var(--cool-t); padding: 10px 16px; margin: 0 0 1.2rem; max-width: 65ch; border-radius: 0 6px 6px 0; }
+.callout p { margin: 0; }
+details { background: var(--sheet); border-radius: 6px; padding: 0 16px; margin: 0 0 1.2rem; }
+details > summary { cursor: pointer; padding: 10px 0; }
+details[open] > summary { margin-bottom: .4rem; }
+details > :last-child { margin-bottom: 1rem; }
+.swatch { display: inline-block; width: .7em; height: .7em; margin-right: .4em; vertical-align: .02em; }
+nav.contents ol { columns: 2 14rem; column-gap: 2rem; padding-left: 1.3rem; }
+.figs { display: flex; flex-wrap: wrap; gap: 20px; margin: .4rem 0 1.6rem; }
+figure { margin: 0; flex: 0 1 auto; }
+figure img { display: block; max-width: 100%; height: auto; }
+figure.shot img { width: 300px; image-rendering: pixelated; border-radius: 4px; box-shadow: 0 0 0 1px var(--rule); }
+figure.wide { flex-basis: 100%; }
+figure.wide img { width: 100%; }
+figcaption { color: var(--muted); font-size: .88rem; margin-top: .4rem; max-width: 300px; }
+figure.wide figcaption { max-width: none; }
+nav.contents li { break-inside: avoid; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+</style>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<div class="page">
+<main id="content" tabindex="-1">
+<a class="home" href="../">RIPPLE</a>
+<h1>Ripple</h1>
+<p>Ripple turns the M-VAVE FM-1 into an instrument you can reprogram without reflashing. It runs droplets: small programs in Lua, each one a different instrument, from a drum machine to a generative ambient piece. The sounds come from currents, written in Faust, Pd or C. Any droplet can load any currents and chain them as it likes, so the same voices, drums and effects turn up in many instruments, and a new one can be a few lines of Lua. Twelve droplets and six currents are built in, and you can add your own: in disk mode the FM-1 shows up on your computer as a USB drive, and you copy files onto it.</p>
+<p>The idea comes from monome's norns: small scripts over compiled sound engines.</p>
+<div class="figs"><figure class="shot"><img src="img/list.png" alt="The list of droplets: arp at the top, then awake, beat, bells, chords, drone, euclid, life and loop" loading="lazy"><figcaption>The droplets</figcaption></figure></div>
+<hr>
+<nav class="contents" aria-label="Contents"><h2 id="contents">Contents</h2>
+<ol><li><a href="#s1">Install</a></li><li><a href="#s2">The list</a></li><li><a href="#s3">The built-in droplets</a></li><li><a href="#s4">Disk mode</a></li><li><a href="#s5">Saving</a></li><li><a href="#s6">When a droplet stops</a></li><li><a href="#s7">Writing your own</a></li><li><a href="#s8">Limits</a></li></ol>
+</nav>
+<hr>
+<h2 id="s1"><span class="num">1</span>Install</h2>
+<p>In Chrome or Edge, connect the FM-1 by USB, open the installer and press Install. The browser asks once to allow MIDI: allow it. Don't unplug the cable while it writes.</p>
+<p>From a terminal, <code>python3 tools/fm1_install.py ripple-VERSION.fwsc</code> does the same.</p>
+<p>The installer's last section puts M-VAVE's own firmware back.</p>
+<hr>
+<h2 id="s2"><span class="num">2</span>The list</h2>
+<p>Ripple starts on the list of droplets. Built-in ones have an outlined mark, and droplets from your disk a filled one. A droplet on your disk with the same name as a built-in one is used instead of it.</p>
+<div class="table" tabindex="0" role="region" aria-label="Table: The list (Control, What it does)"><table><thead><tr><th>Control</th><th>What it does</th></tr></thead><tbody><tr><td>SELECT, OCT− · OCT+</td><td>Move through the list.</td></tr><tr><td>PLAY or SEL</td><td>Start the droplet.</td></tr><tr><td>HOME, held a second</td><td>Leave a droplet and come back to the list, from anywhere.</td></tr></tbody></table></div>
+<p>The last two entries aren't droplets. <strong>Disk mode</strong> shows the disk to a computer. <strong>Empty the disk</strong> erases everything on it and leaves its folders: press PLAY twice. The built-in droplets aren't on the disk, so they stay.</p>
+<p>Ripple remembers the droplet you started last and starts the list there.</p>
+<hr>
+<h2 id="s3"><span class="num">3</span>The built-in droplets</h2>
+<p>While a droplet runs, the keys, knobs and buttons are its own, except HOME held a second. MASTER is the volume.</p>
+<div class="table" tabindex="0" role="region" aria-label="Table: The built-in droplets (Droplet, What it is)"><table><thead><tr><th>Droplet</th><th>What it is</th></tr></thead><tbody><tr><td>arp</td><td>Hold keys and they play one after another.</td></tr><tr><td>awake</td><td>A melody that wanders a scale on its own.</td></tr><tr><td>beat</td><td>A 16-step drum machine on the white keys.</td></tr><tr><td>bells</td><td>FM bells on loops of different lengths, drifting in and out of step.</td></tr><tr><td>chords</td><td>A chord on every white key.</td></tr><tr><td>drone</td><td>Three slow FM voices that change colour by themselves.</td></tr><tr><td>euclid</td><td>Three drum tracks whose hits spread as evenly as they can.</td></tr><tr><td>life</td><td>Conway's Game of Life, playing a note for each cell born.</td></tr><tr><td>loop</td><td>A note looper: play a phrase, it repeats, play over it.</td></tr><tr><td>midi</td><td>The FM-1 as a USB MIDI controller, with no sound of its own.</td></tr><tr><td>monk</td><td>A singing voice: lean on a key to open the vowel.</td></tr><tr><td>poly</td><td>A six-voice synth through a delay.</td></tr><tr><td>rack</td><td>Build an instrument: MIDI effects into any voice, then two effects.</td></tr><tr><td>rain</td><td>Plucked notes falling on a scale into a reverb.</td></tr><tr><td>sophie</td><td>Sixteen pads of metallic FM percussion with a 16-step pattern.</td></tr></tbody></table></div>
+<h3 id="arp">arp</h3>
+<div class="table" tabindex="0" role="region" aria-label="Table: arp (Control, What it does)"><table><thead><tr><th>Control</th><th>What it does</th></tr></thead><tbody><tr><td>Keys</td><td>Hold them and they play in turn.</td></tr><tr><td>ARP</td><td>Keeps playing after you let go; the next keys you press replace the held ones. Press ARP again to stop.</td></tr><tr><td>PRESET</td><td>The order: up, down, up and down, random, or as played.</td></tr><tr><td>ALGORITHM</td><td>The sound: saws or FM.</td></tr><tr><td>K1 · K2 · K3 · K4</td><td>The rate (eighths to thirty-seconds), octaves (1 to 3), how long each note lasts, the brightness.</td></tr></tbody></table></div>
+<h3 id="awake">awake</h3>
+<div class="figs"><figure class="shot"><img src="img/awake.png" alt="awake: dots wandering up and down, the step marker under them, wander 2 rest 20%" loading="lazy"><figcaption>awake</figcaption></figure></div>
+<p>Every sixteenth note it moves a few steps up or down a scale (C Dorian, three octaves) and plays where it lands, or rests. The dots are the last 16 steps.</p>
+<div class="table" tabindex="0" role="region" aria-label="Table: awake (Control, What it does)"><table><thead><tr><th>Control</th><th>What it does</th></tr></thead><tbody><tr><td>PLAY</td><td>Stops and starts it.</td></tr><tr><td>Keys</td><td>Play along on the same voice.</td></tr><tr><td>K1 · K2 · K3 · K4</td><td>The tempo, how far it moves each step (1 to 5), how often it rests, the filter.</td></tr></tbody></table></div>
+<h3 id="beat">beat</h3>
+<div class="table" tabindex="0" role="region" aria-label="Table: beat (Control, What it does)"><table><thead><tr><th>Control</th><th>What it does</th></tr></thead><tbody><tr><td>White keys</td><td>The 16 steps: press one to turn it on or off.</td></tr><tr><td>ALGORITHM</td><td>Picks the drum: kick, snare or hat.</td></tr><tr><td>PLAY</td><td>Starts and stops it.</td></tr><tr><td>K1 · K2 · K3 · K4</td><td>The tempo, the drums' tune, their decay, the snare's snap.</td></tr></tbody></table></div>
+<h3 id="bells">bells</h3>
+<div class="figs"><figure class="shot"><img src="img/bells.png" alt="bells: four rings, a dot going round each" loading="lazy"><figcaption>bells</figcaption></figure></div>
+<p>Each bell rings once every 13, 17, 23, 29, 31 or 37 sixteenths, so they line up only now and then. A bell sometimes moves to the next note of the scale.</p>
+<div class="table" tabindex="0" role="region" aria-label="Table: bells (Control, What it does)"><table><thead><tr><th>Control</th><th>What it does</th></tr></thead><tbody><tr><td>Keys</td><td>Ring a bell.</td></tr><tr><td>K1 · K2 · K3 · K4</td><td>The tempo, how bright the bells are, the reverb's size, how many bells (1 to 6).</td></tr></tbody></table></div>
+<h3 id="chords">chords</h3>
+<div class="figs"><figure class="shot"><img src="img/chords.png" alt="chords: C and G held, their notes as dots" loading="lazy"><figcaption>chords</figcaption></figure></div>
+<div class="table" tabindex="0" role="region" aria-label="Table: chords (Control, What it does)"><table><thead><tr><th>Control</th><th>What it does</th></tr></thead><tbody><tr><td>White keys</td><td>A chord of C major on that note: the key of D plays D minor, G plays G major.</td></tr><tr><td>Black keys</td><td>One note, an octave up, over the chords.</td></tr><tr><td>PRESET</td><td>The kind of chord: triads, sevenths, sus, ninths or open fifths.</td></tr><tr><td>ALGORITHM</td><td>The sound: saws or FM.</td></tr><tr><td>K1 · K2 · K3 · K4</td><td>The brightness, the strum (0 plays the notes together), close or open voicing, the echo.</td></tr></tbody></table></div>
+<h3 id="drone">drone</h3>
+<div class="table" tabindex="0" role="region" aria-label="Table: drone (Control, What it does)"><table><thead><tr><th>Control</th><th>What it does</th></tr></thead><tbody><tr><td>Keys</td><td>Move the root; the fifth and the octave follow.</td></tr><tr><td>K1 · K2 · K3 · K4</td><td>How fast the colour moves, how bright it is, the FM ratio, the reverb.</td></tr></tbody></table></div>
+<h3 id="euclid">euclid</h3>
+<div class="figs"><figure class="shot"><img src="img/euclid.png" alt="euclid: three rings of dots, the hits larger" loading="lazy"><figcaption>euclid</figcaption></figure></div>
+<p>Each track spreads its hits as evenly as it can over its steps: 4 hits in 16 is four on the floor, 3 in 8 is a tresillo. Tracks of different lengths drift against each other.</p>
+<div class="table" tabindex="0" role="region" aria-label="Table: euclid (Control, What it does)"><table><thead><tr><th>Control</th><th>What it does</th></tr></thead><tbody><tr><td>ALGORITHM</td><td>Picks the track: kick, snare or hat.</td></tr><tr><td>K1 · K2 · K3</td><td>The track's steps (1 to 16), its hits, and where it starts.</td></tr><tr><td>K4</td><td>The tempo.</td></tr><tr><td>PLAY</td><td>Starts and stops it.</td></tr><tr><td>Keys</td><td>Play the picked drum.</td></tr></tbody></table></div>
+<h3 id="life">life</h3>
+<div class="figs"><figure class="shot"><img src="img/life.png" alt="life: the grid with a few shapes, the cells just born brighter" loading="lazy"><figcaption>life</figcaption></figure></div>
+<p>A cell is born where it has exactly three neighbours, and lives on with two or three. Each birth can play a note: its column is the note of the scale, its row the octave. A grid that goes quiet seeds itself again.</p>
+<div class="table" tabindex="0" role="region" aria-label="Table: life (Control, What it does)"><table><thead><tr><th>Control</th><th>What it does</th></tr></thead><tbody><tr><td>Keys</td><td>Plant seeds in their column.</td></tr><tr><td>PLAY</td><td>Pauses it.</td></tr><tr><td>K1 · K2 · K3 · K4</td><td>The tempo, how many births may sound at once, how long the strings ring, the reverb.</td></tr></tbody></table></div>
+<h3 id="loop">loop</h3>
+<div class="figs"><figure class="shot"><img src="img/loop.png" alt="loop: a circle with four notes on it and the hand of the clock" loading="lazy"><figcaption>loop</figcaption></figure></div>
+<div class="table" tabindex="0" role="region" aria-label="Table: loop (Control, What it does)"><table><thead><tr><th>Control</th><th>What it does</th></tr></thead><tbody><tr><td>REC</td><td>Starts and stops recording. Recording adds to what is there.</td></tr><tr><td>PLAY</td><td>Starts and stops the loop.</td></tr><tr><td>EDIT</td><td>Clears the loop.</td></tr><tr><td>Keys</td><td>Play; while recording, each note is added at the sixteenth playing.</td></tr><tr><td>K1 · K2 · K3 · K4</td><td>The length (1, 2 or 4 bars), the tempo, how long the strings ring, the reverb.</td></tr></tbody></table></div>
+<h3 id="midi">midi</h3>
+<div class="table" tabindex="0" role="region" aria-label="Table: midi (Control, What it does)"><table><thead><tr><th>Control</th><th>What it does</th></tr></thead><tbody><tr><td>Keys</td><td>Send notes over USB, with their velocity.</td></tr><tr><td>K1 · K2 · K3 · K4</td><td>Send CCs 74, 71, 1 and 7.</td></tr><tr><td>OCT− · OCT+</td><td>Move the keys an octave.</td></tr><tr><td>PRESET</td><td>The MIDI channel.</td></tr></tbody></table></div>
+<p>What comes in over MIDI shows at the bottom of the screen.</p>
+<h3 id="monk">monk</h3>
+<p>MonkSynth's singing voice (by Jonathan Taylor), as MONK-1 has it, through the delay. One note at a time.</p>
+<div class="table" tabindex="0" role="region" aria-label="Table: monk (Control, What it does)"><table><thead><tr><th>Control</th><th>What it does</th></tr></thead><tbody><tr><td>Keys</td><td>Sing, louder the harder you play. Leaning on a key opens the vowel (or bends the note).</td></tr><tr><td>OCT− · OCT+</td><td>Move the keys an octave.</td></tr><tr><td>ALGORITHM</td><td>What leaning does: open the vowel, bend, both, or close the vowel and bend.</td></tr><tr><td>EDIT</td><td>K1–K4: vowel, head size, breath, level.</td></tr><tr><td>LFO</td><td>K1–K4: vibrato, its rate, glide, tune.</td></tr><tr><td>ENV</td><td>K1–K4: attack, decay, sustain, release.</td></tr><tr><td>GLO</td><td>K1–K4: the choir (1 to 4 voices), their detune, their spread, how far leaning reaches.</td></tr><tr><td>FX</td><td>K1–K4: the delay's time, feedback, tone and mix.</td></tr></tbody></table></div>
+<h3 id="poly">poly</h3>
+<div class="table" tabindex="0" role="region" aria-label="Table: poly (Control, What it does)"><table><thead><tr><th>Control</th><th>What it does</th></tr></thead><tbody><tr><td>Keys</td><td>Play, six notes at once.</td></tr><tr><td>OCT− · OCT+</td><td>Move the keys an octave.</td></tr><tr><td>ALGORITHM</td><td>The sound: saws or FM.</td></tr><tr><td>K1 · K2</td><td>The filter's cutoff and resonance (with FM: its brightness and ratio).</td></tr><tr><td>K3 · K4</td><td>The delay's time and feedback.</td></tr></tbody></table></div>
+<h3 id="rack">rack</h3>
+<p>Build an instrument on the FM-1 from any currents, built in or on the disk: the keys (or a MIDI keyboard, over USB or the MIDI jack) go through MIDI effects, into a voice, then through two effects. The MIDI effects are the RS7000's Play FX, as e16-launcher has them.</p>
+<div class="table" tabindex="0" role="region" aria-label="Table: rack (Control, What it does)"><table><thead><tr><th>Control</th><th>What it does</th></tr></thead><tbody><tr><td>ARP</td><td>The MIDI effects: SELECT turns their pages (chord, arp, echo, feel, loop); ARP again turns the page's effect on or off.</td></tr><tr><td>EDIT · FX · GLO</td><td>The voice, the first effect, the second. ALGORITHM picks the current (an effect can be none); SELECT turns its pages of knobs.</td></tr><tr><td>K1 · K2 · K3 · K4</td><td>The page's knobs.</td></tr><tr><td>SEQ held</td><td>The loop: what you just played repeats, as the loop page's loop and stretch say.</td></tr><tr><td>PRESET</td><td>The tempo (the MIDI effects follow MIDI clock when it comes in).</td></tr><tr><td>OCT− · OCT+</td><td>Move the keys an octave.</td></tr><tr><td>SAVE</td><td>Keeps the rack: its currents, their knobs, the MIDI effects.</td></tr></tbody></table></div>
+<p>Among the voices are seventeen macro-oscillator engines (<code>macro-va</code>, <code>macro-modal</code>, <code>macro-kick</code> and the rest), from Emilie Gillet's open-source code: K1–K3 are each engine's harmonics, timbre and morph. Three more (<code>macro-wave</code>, <code>macro-sixop</code>, <code>macro-speech</code>) are on each release, to copy into <code>currents</code> on the disk in disk mode.</p>
+<p>Each release also has four droplets that play Pd patches from the community (<code>robot</code>, <code>chip</code>, <code>fold</code>, <code>mono</code>) and the currents they use. For what each one does, see <a href="https://github.com/charlesvestal/fm1-ripple/blob/main/examples/pd/README.md">Droplets on Pd patches</a>.</p>
+<p>The top of the screen shows how busy the sound is and how much room is left for currents. A current that does not fit says so at the bottom, and its slot stays empty.</p>
+<h3 id="rain">rain</h3>
+<div class="figs"><figure class="shot"><img src="img/rain.png" alt="rain: ripples spreading where notes fell" loading="lazy"><figcaption>rain</figcaption></figure></div>
+<div class="table" tabindex="0" role="region" aria-label="Table: rain (Control, What it does)"><table><thead><tr><th>Control</th><th>What it does</th></tr></thead><tbody><tr><td>PLAY</td><td>Stops and starts the rain.</td></tr><tr><td>Keys</td><td>Play along.</td></tr><tr><td>K1 · K2 · K3 · K4</td><td>How hard it rains, how bright the drops are, the reverb's size, how long the strings ring.</td></tr></tbody></table></div>
+<h3 id="sophie">sophie</h3>
+<p>Sophie's sixteen pads of metallic FM percussion (by Matt Estela), as SPH-16 has them, through the reverb. Kit 1 is Sophie's own.</p>
+<div class="table" tabindex="0" role="region" aria-label="Table: sophie (Control, What it does)"><table><thead><tr><th>Control</th><th>What it does</th></tr></thead><tbody><tr><td>Keys</td><td>The lowest sixteen play the pads, harder for louder. The pad you play last is the one the knobs change.</td></tr><tr><td>PLAY</td><td>Starts and stops the pattern.</td></tr><tr><td>REC</td><td>While lit, what you play goes into the pattern.</td></tr><tr><td>SEQ</td><td>The white keys are the steps of the pad you played last.</td></tr><tr><td>SELECT · ALGORITHM</td><td>The pad; its model (fuse, stack, split, shard, pipe, boom).</td></tr><tr><td>EDIT · ENV · LFO · FX</td><td>K1–K4: the pad's sound (tune, decay, colour, metal); shape (feedback, sweep, cutoff, resonance); ring (time, amount, mix, tone); grit (drive, crush, level, pan).</td></tr><tr><td>GLO</td><td>K1–K4: the reverb's size, decay, damping and mix.</td></tr><tr><td>PRESET</td><td>The tempo.</td></tr></tbody></table></div>
+<hr>
+<h2 id="s4"><span class="num">4</span>Disk mode</h2>
+<div class="figs"><figure class="shot"><img src="img/disk.png" alt="Disk mode: a drive on the screen, &quot;connect the FM-1 to a computer&quot;" loading="lazy"><figcaption>Disk mode</figcaption></figure></div>
+<p>Choose <strong>disk mode</strong> at the end of the list. The FM-1 leaves USB for a moment and comes back as a drive called RIPPLE, with four folders:</p>
+<div class="table" tabindex="0" role="region" aria-label="Table: Disk mode (Folder, What goes in it)"><table><thead><tr><th>Folder</th><th>What goes in it</th></tr></thead><tbody><tr><td><code>droplets</code></td><td>Droplets: <code>.lua</code> files. Each one appears in the list.</td></tr><tr><td><code>currents</code></td><td>Currents: <code>.cur</code> files, made with Ripple's SDK.</td></tr><tr><td><code>data</code></td><td>What droplets save, one file each, named after the droplet. Delete one to give its droplet its defaults back.</td></tr><tr><td><code>lib</code></td><td>Lua modules your droplets share.</td></tr></tbody></table></div>
+<p>Copy files on or off, then eject the drive on the computer. Ripple comes back to the list with what you added. To leave without ejecting, press HOME; eject first if you've changed anything, so the computer finishes writing.</p>
+<p>While the FM-1 is a drive it has no USB MIDI or USB audio. The disk holds 276 KB.</p>
+<hr>
+<h2 id="s5"><span class="num">5</span>Saving</h2>
+<p>In every built-in droplet, SAVE keeps its settings, and beat, euclid and loop keep their patterns too. They come back the next time you start the droplet. The sound stops for a moment while the FM-1 writes.</p>
+<hr>
+<h2 id="s6"><span class="num">6</span>When a droplet stops</h2>
+<div class="figs"><figure class="shot"><img src="img/error.png" alt="The droplet stopped: the error, the line it came from, what it printed last" loading="lazy"><figcaption>A droplet with a mistake</figcaption></figure></div>
+<p>A mistake in a droplet stops it and shows what went wrong, the line it happened on, and the last lines the droplet printed. Press HOME to go back to the list. Fix the file in disk mode and try again.</p>
+<hr>
+<h2 id="s7"><span class="num">7</span>Writing your own</h2>
+<p>A droplet is a Lua file: its functions answer the keys, knobs and buttons, draw the screen and play notes on currents. For the whole API, see <a href="https://github.com/charlesvestal/fm1-ripple/blob/main/docs/DROPLETS.md">Writing droplets</a>.</p>
+<p>A current is a sound, written in Faust, Pd or C and built into a <code>.cur</code> file on a computer. For the SDK, see <a href="https://github.com/charlesvestal/fm1-ripple/blob/main/sdk/README.md">Writing currents</a>.</p>
+<p>To change a built-in droplet, copy it from <code>builtin/droplets</code> in Ripple's source onto the disk and edit it there.</p>
+<hr>
+<h2 id="s8"><span class="num">8</span>Limits</h2>
+<div class="table" tabindex="0" role="region" aria-label="Table: Limits (What, How much)"><table><thead><tr><th>What</th><th>How much</th></tr></thead><tbody><tr><td>The disk</td><td>276 KB</td></tr><tr><td>A droplet's memory (Lua)</td><td>112 KB</td></tr><tr><td>A droplet's currents, together</td><td>132 KB: the reverb takes 38 KB of it and the delay 16 KB</td></tr><tr><td>MIDI effects in one droplet</td><td>2</td></tr><tr><td>Currents in one droplet</td><td>8</td></tr><tr><td>What a droplet saves</td><td>8 KB</td></tr><tr><td>Droplets in the list</td><td>47</td></tr></tbody></table></div>
+</main>
+</div>
+</body>
+</html>
