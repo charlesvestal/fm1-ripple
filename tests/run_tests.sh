@@ -24,6 +24,8 @@ run() {
 run host-build sh build.sh --host
 run pd-determinism "$PY" tests/host/determinism.py     # (a patch compiled twice: the same files)
 run pd-currents "$PY" sdk/tools/currents.py currents/pd --host app/build/currents-host
+run currents-snapshot sh -c "$PY tests/host/currents_snapshot.py --out $OUT/snap.json &&
+    $PY tests/host/currents_compare.py tests/host/currents_baseline.json $OUT/snap.json"
 run droplets env RIPPLE_CURRENTS=app/build/currents-host app/build/host/ripple_host tests/scenarios/droplets.txt \
     app/build/scenarios/droplets
 mkdir -p app/build/scenarios/examples

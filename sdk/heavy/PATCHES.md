@@ -7,7 +7,7 @@ files (but the few it cannot build, `HV_LEAVE_OUT` in `currents.py`) into `sdk/b
 laid over them, and Ripple's own files (`HvUtils.h`, `heavy_shim.c`, `new`) beside them. Nothing there is committed:
 the build makes it again when hvcc's version or a file in `static/` changes. `requirements.txt` pins the hvcc version.
 
-The patch's own files (`Heavy_NAME.*`) are built as hvcc writes them, with two flags (`HV_CFLAGS` in `currents.py`, on the wrapper's `ripple-cflags` line): `-cl-single-precision-constant`, because an `[expr]` puts the patch's numbers into the C as they are (`0.5`, a double), and `-Wno-delete-non-virtual-dtor`, for `hv_NAME_free`, which destroys the patch through the destructor `HeavyContext.hpp` makes non-virtual (a current never calls it).
+The patch's own files (`Heavy_NAME.*`) are built as hvcc writes them, with two flags (`HV_CFLAGS` in `currents.py`, on the wrapper's `ripple-cflags` line): `-cl-single-precision-constant` (GCC's `-fsingle-precision-constant`, when the computer's compiler is GCC), because an `[expr]` puts the patch's numbers into the C as they are (`0.5`, a double), and `-Wno-delete-non-virtual-dtor`, for `hv_NAME_free`, which destroys the patch through the destructor `HeavyContext.hpp` makes non-virtual (a current never calls it).
 
 `static/` holds only the files that differ from hvcc's. To move to a new hvcc version, diff each hvcc file named
 below between the old version and the new one, carry the changes listed here over to the new file, and keep the

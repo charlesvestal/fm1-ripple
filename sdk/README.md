@@ -21,7 +21,8 @@ Copy `mysound.cur` into `currents` on Ripple's disk, in disk mode, and a droplet
 `current.load("mysound")`.
 
 Building for the FM-1 needs the JieLi toolchain (`JIELI_TOOLCHAIN`, default `~/.jieli/toolchain`) and, on a Mac,
-podman or Docker, as fm1-base does. Faust currents need `faust` on the path, and Pd patches `hvcc`.
+podman or Docker, as fm1-base does. Faust currents need `faust` on the path. Pd patches need hvcc in the Python that
+runs `currents.py` (for how to install it, see "In Pd").
 
 ## In Faust
 
@@ -45,7 +46,12 @@ process = os.sawtooth(freq) : fi.lowpass(1, 400 + 8000 * (1 - damp))
         * en.ar(0.002, 0.4, gate) * gain <: _, _;
 ```
 
-Faust code is compiled to C, then built like a C current. A few things are different from Faust on a computer:
+Faust code is compiled to C, then built like a C current. The parameters, their ranges and the number of inputs
+come from Faust's own description of the sound (`faust -json`). The build keeps the C and that description in a
+`gen` folder beside the `.dsp`: it makes them again where Faust is installed and uses them as they are where it
+isn't, so commit them if others build your current without Faust.
+
+A few things are different from Faust on a computer:
 
 - There is no `double`: Faust is run with `-single`.
 - The maths functions are fast approximations (`fastmath.h`), close enough for sound, not for science.
@@ -101,8 +107,11 @@ A few things are different from Pd on a computer:
   current is too big to load, and a droplet that loads it gets "no room". Shorten the delay to fit.
 
 The build compiles each patch with hvcc every time, so the Python that runs it needs hvcc
-(`pip install -r sdk/heavy/requirements.txt`: hvcc 0.17.3, Python 3.10 or newer). The output is the same on every
-run, and nothing the build generates is committed: it goes to `sdk/build/heavy/`. Ripple's changes to Heavy's
+(`pip install -r sdk/heavy/requirements.txt`: hvcc 0.17.3, Python 3.10 or newer). It runs hvcc as a library, with
+Ripple's own generator (`sdk/heavy/c2ripple.py`, from the template `sdk/heavy/templates/current.cc`) writing the
+wrapper that makes the patch a current; hvcc's C for the patch is built as hvcc writes it. The output is the same on
+every run, and the same on a Mac and on Linux with the same Python version (the release builder has 3.12).
+Nothing the build generates is committed: it goes to `sdk/build/heavy/`. Ripple's changes to Heavy's
 runtime are the files in `sdk/heavy/static/`, which `sdk/heavy/PATCHES.md` lists. The runtime is Enzien Audio's and
 Wasted Audio's, under the ISC licence; the C made from your patch is yours. Put a `LICENSE` beside the patch and the
 build writes its copyright lines into that C.

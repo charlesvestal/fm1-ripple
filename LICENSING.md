@@ -17,7 +17,7 @@
 A current or a droplet you write may use any licence: the SDK's header and tools are MIT, and the C that Faust
 generates from your `.dsp`, and Heavy from your `.pd`, is yours. Heavy's compiler (hvcc) is GPL-3.0, but only its
 output is in Ripple: the runtime under ISC, and the code made from a patch under the patch's own copyright, which
-`sdk/tools/currents.py` takes from the `LICENSE` beside the patch. The kept Faust output in `currents/gen/` is generated from this repository's
-`.dsp` files.
+`sdk/tools/currents.py` takes from the `LICENSE` beside the patch. The kept Faust output in `currents/gen/` (the C and Faust's
+JSON description) is generated from this repository's `.dsp` files. Nothing generated from a Pd patch is committed.
 
 Ripple is not affiliated with M-VAVE or monome. M-VAVE and FM-1 are trademarks of their owners; norns is monome's.

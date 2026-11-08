@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: MPL-2.0
 # Copyright (C) 2026 Charles Vestal
 """Every Faust and Pd current built for the FM-1, and what each one is, as JSON: its name, inputs, voices,
 parameters, state and image size. tests/host/currents_baseline.json is this from before the hvcc generator; a

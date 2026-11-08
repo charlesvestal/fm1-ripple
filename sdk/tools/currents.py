@@ -28,7 +28,8 @@ run (the build refuses it). Either may say, in its own lines,
 The other sources are built once for each set of flags (sdk/build/obj/) and only what the current reaches is kept.
 The browser's emulator leaves C++ currents out.
 
-Faust's C for a .dsp is kept in gen/ beside it: made again where Faust is installed, used as it is where it is not.
+Faust's C for a .dsp and its faust -json (where the parameters, inputs and voices come from) are kept in gen/ beside
+it: made again where Faust is installed, used as they are where it is not.
 
 Environment: JIELI_TOOLCHAIN (default ~/.jieli/toolchain), FAUST (default faust)."""
 import argparse
@@ -233,6 +234,20 @@ HV_LEAVE_OUT = (
 HV_CFLAGS = ["-cl-single-precision-constant", "-Wno-delete-non-virtual-dtor"]
 
 
+def for_cc(cc, flags):
+    """flags for the computer's compiler cc: GCC (Linux's cc) says -fsingle-precision-constant for clang's
+    -cl-single-precision-constant"""
+    if cc not in _GCC:
+        v = subprocess.run([cc, "--version"], capture_output=True, text=True).stdout
+        _GCC[cc] = "clang" not in v.lower()
+    if not _GCC[cc]:
+        return list(flags)
+    return ["-fsingle-precision-constant" if str(f) == "-cl-single-precision-constant" else f for f in flags]
+
+
+_GCC = {}
+
+
 def hvcc_pinned():
     """the hvcc version Ripple's runtime files are made for: sdk/heavy/requirements.txt's hvcc==X.Y.Z"""
     m = re.search(r"^\s*hvcc\s*==\s*([\w.]+)", HV_REQUIREMENTS.read_text(), re.M)
@@ -412,7 +427,7 @@ int main() {{
             continue
         o = d / f"{f.parent.name}_{f.stem}.o"
         args = [cxx, "-std=c++11", "-nostdinc++", "-fno-exceptions", "-fno-rtti"] if f.suffix == ".cpp" else [cc, "-std=c99"]
-        r = subprocess.run([*args, "-O1", "-w", *HV_CFLAGS, *inc, "-c", str(f), "-o", str(o)], capture_output=True, text=True)
+        r = subprocess.run([*args, "-O1", "-w", *for_cc(args[0], HV_CFLAGS), *inc, "-c", str(f), "-o", str(o)], capture_output=True, text=True)
         if r.returncode:
             sys.stderr.write(r.stderr)
             raise SystemExit(f"currents: {f.name} (Heavy) did not compile on this computer")
@@ -638,7 +653,8 @@ def build_host(srcs, out_dir):
             o = work / (hashlib.sha1(str(Path(f).resolve()).encode()).hexdigest()[:8] + ".o")
             cpp = Path(f).suffix in (".cc", ".cpp")
             r = subprocess.run([cxx if cpp else cc, "-O2", "-fPIC", "-ffp-contract=off", "-w",
-                                *(["-std=c99"] if not cpp else CXXFLAGS), *inc, "-c", str(f), "-o", str(o)],
+                                *(["-std=c99"] if not cpp else CXXFLAGS), *for_cc(cxx if cpp else cc, inc),
+                                "-c", str(f), "-o", str(o)],
                                capture_output=True, text=True)
             if r.returncode:
                 sys.stderr.write(r.stderr)
