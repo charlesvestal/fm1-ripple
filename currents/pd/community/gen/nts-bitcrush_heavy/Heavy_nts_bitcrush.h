@@ -1,4 +1,4 @@
-/** the author of nts-bitcrush.pd */
+/** Copyright (c) 2025 boochow Instruments (loguesdk_hvcc_examples, nts1mkii_hvcc_examples) / Copyright (c) 2026 boochow Instruments (drumlogue_hvcc_examples). MIT License (LICENSE beside nts-bitcrush.pd) */
 
 #ifndef _HEAVY_NTS_BITCRUSH_H_
 #define _HEAVY_NTS_BITCRUSH_H_

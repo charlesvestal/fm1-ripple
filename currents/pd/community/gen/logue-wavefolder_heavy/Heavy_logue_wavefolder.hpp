@@ -1,14 +1,14 @@
-/** the author of logue-wavefolder.pd */
+/** Copyright (c) 2025 boochow Instruments (loguesdk_hvcc_examples, nts1mkii_hvcc_examples) / Copyright (c) 2026 boochow Instruments (drumlogue_hvcc_examples). MIT License (LICENSE beside logue-wavefolder.pd) */
 
 #ifndef _HEAVY_CONTEXT_LOGUE_WAVEFOLDER_HPP_
 #define _HEAVY_CONTEXT_LOGUE_WAVEFOLDER_HPP_
 
 // object includes
 #include "HeavyContext.hpp"
-#include "HvSignalPhasor.h"
-#include "HvSignalVar.h"
-#include "HvSignalLine.h"
 #include "HvMath.h"
+#include "HvSignalPhasor.h"
+#include "HvSignalLine.h"
+#include "HvSignalVar.h"
 
 class Heavy_logue_wavefolder : public HeavyContext {
 
@@ -53,22 +53,22 @@ class Heavy_logue_wavefolder : public HeavyContext {
 
 
   // static sendMessage functions
-  static void cMsg_Z8ErjHnt_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cMsg_MhWktToE_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cMsg_qlgHHV90_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cMsg_WNTkrTB2_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cReceive_W1tkqv6Y_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cReceive_TjUVQciC_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cReceive_ovyMMhYL_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cReceive_vp5vb5BT_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cReceive_6xpn4S0b_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cMsg_QqBHe7oq_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cMsg_sYvw3AbU_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cMsg_w53X4xyI_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cMsg_WJk43TsJ_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cReceive_QhDqryXR_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cReceive_S9hBs5rR_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cReceive_G70QHmji_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cReceive_AeotVo6w_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cReceive_PorV2Prt_sendMessage(HeavyContextInterface *, int, const HvMessage *);
 
   // objects
-  SignalPhasor sPhasor_6myptfwv;
-  SignalLine sLine_kEughDpV;
-  SignalLine sLine_WnT5HiOq;
-  SignalLine sLine_hKeXzF7i;
-  SignalLine sLine_Uhj43Got;
+  SignalPhasor sPhasor_R7WNrk1F;
+  SignalLine sLine_0m3G5PYn;
+  SignalLine sLine_evXJRgob;
+  SignalLine sLine_SFtwpL1a;
+  SignalLine sLine_5eF5z6xW;
 };
 
 #endif // _HEAVY_CONTEXT_LOGUE_WAVEFOLDER_HPP_

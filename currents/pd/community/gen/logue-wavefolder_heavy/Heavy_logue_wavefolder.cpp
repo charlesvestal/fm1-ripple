@@ -1,4 +1,4 @@
-/** the author of logue-wavefolder.pd */
+/** Copyright (c) 2025 boochow Instruments (loguesdk_hvcc_examples, nts1mkii_hvcc_examples) / Copyright (c) 2026 boochow Instruments (drumlogue_hvcc_examples). MIT License (LICENSE beside logue-wavefolder.pd) */
 
 #include "Heavy_logue_wavefolder.hpp"
 
@@ -25,11 +25,11 @@
 
 Heavy_logue_wavefolder::Heavy_logue_wavefolder(float sampleRate, int poolKb, int inQueueKb, int outQueueKb)
     : HeavyContext(sampleRate, poolKb, inQueueKb, outQueueKb) {
-  numBytes += sPhasor_k_init(&sPhasor_6myptfwv, 0.0f, sampleRate);
-  numBytes += sLine_init(&sLine_kEughDpV);
-  numBytes += sLine_init(&sLine_WnT5HiOq);
-  numBytes += sLine_init(&sLine_hKeXzF7i);
-  numBytes += sLine_init(&sLine_Uhj43Got);
+  numBytes += sPhasor_k_init(&sPhasor_R7WNrk1F, 0.0f, sampleRate);
+  numBytes += sLine_init(&sLine_0m3G5PYn);
+  numBytes += sLine_init(&sLine_evXJRgob);
+  numBytes += sLine_init(&sLine_SFtwpL1a);
+  numBytes += sLine_init(&sLine_5eF5z6xW);
   
 }
 
@@ -44,23 +44,23 @@ HvTable *Heavy_logue_wavefolder::getTableForHash(hv_uint32_t tableHash) {
 void Heavy_logue_wavefolder::scheduleMessageForReceiver(hv_uint32_t receiverHash, HvMessage *m) {
   switch (receiverHash) {
     case 0x6C87328F: { // alt_f
-      mq_addMessageByTimestamp(&mq, m, 0, &cReceive_TjUVQciC_sendMessage);
+      mq_addMessageByTimestamp(&mq, m, 0, &cReceive_S9hBs5rR_sendMessage);
       break;
     }
     case 0x8B2148DD: { // pitch
-      mq_addMessageByTimestamp(&mq, m, 0, &cReceive_W1tkqv6Y_sendMessage);
+      mq_addMessageByTimestamp(&mq, m, 0, &cReceive_QhDqryXR_sendMessage);
       break;
     }
     case 0x4C5B5D06: { // scale_f
-      mq_addMessageByTimestamp(&mq, m, 0, &cReceive_ovyMMhYL_sendMessage);
+      mq_addMessageByTimestamp(&mq, m, 0, &cReceive_G70QHmji_sendMessage);
       break;
     }
     case 0xCE9531B0: { // shape_f
-      mq_addMessageByTimestamp(&mq, m, 0, &cReceive_vp5vb5BT_sendMessage);
+      mq_addMessageByTimestamp(&mq, m, 0, &cReceive_AeotVo6w_sendMessage);
       break;
     }
     case 0x32F5C118: { // slfo
-      mq_addMessageByTimestamp(&mq, m, 0, &cReceive_6xpn4S0b_sendMessage);
+      mq_addMessageByTimestamp(&mq, m, 0, &cReceive_PorV2Prt_sendMessage);
       break;
     }
     default: return;
@@ -136,60 +136,60 @@ int Heavy_logue_wavefolder::getParameterInfo(int index, HvParameterInfo *info) {
  */
 
 
-void Heavy_logue_wavefolder::cMsg_Z8ErjHnt_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *const n) {
+void Heavy_logue_wavefolder::cMsg_QqBHe7oq_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *const n) {
   HvMessage *m = nullptr;
   m = HV_MESSAGE_ON_STACK(2);
   msg_init(m, 2, msg_getTimestamp(n));
   msg_setElementToFrom(m, 0, n, 0);
   msg_setFloat(m, 1, 10.0f);
-  sLine_onMessage(_c, &Context(_c)->sLine_Uhj43Got, 0, m, NULL);
+  sLine_onMessage(_c, &Context(_c)->sLine_5eF5z6xW, 0, m, NULL);
 }
 
-void Heavy_logue_wavefolder::cMsg_MhWktToE_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *const n) {
+void Heavy_logue_wavefolder::cMsg_sYvw3AbU_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *const n) {
   HvMessage *m = nullptr;
   m = HV_MESSAGE_ON_STACK(2);
   msg_init(m, 2, msg_getTimestamp(n));
   msg_setElementToFrom(m, 0, n, 0);
   msg_setFloat(m, 1, 10.0f);
-  sLine_onMessage(_c, &Context(_c)->sLine_hKeXzF7i, 0, m, NULL);
+  sLine_onMessage(_c, &Context(_c)->sLine_SFtwpL1a, 0, m, NULL);
 }
 
-void Heavy_logue_wavefolder::cMsg_qlgHHV90_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *const n) {
+void Heavy_logue_wavefolder::cMsg_w53X4xyI_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *const n) {
   HvMessage *m = nullptr;
   m = HV_MESSAGE_ON_STACK(2);
   msg_init(m, 2, msg_getTimestamp(n));
   msg_setElementToFrom(m, 0, n, 0);
   msg_setFloat(m, 1, 10.0f);
-  sLine_onMessage(_c, &Context(_c)->sLine_WnT5HiOq, 0, m, NULL);
+  sLine_onMessage(_c, &Context(_c)->sLine_evXJRgob, 0, m, NULL);
 }
 
-void Heavy_logue_wavefolder::cMsg_WNTkrTB2_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *const n) {
+void Heavy_logue_wavefolder::cMsg_WJk43TsJ_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *const n) {
   HvMessage *m = nullptr;
   m = HV_MESSAGE_ON_STACK(2);
   msg_init(m, 2, msg_getTimestamp(n));
   msg_setElementToFrom(m, 0, n, 0);
   msg_setFloat(m, 1, 10.0f);
-  sLine_onMessage(_c, &Context(_c)->sLine_kEughDpV, 0, m, NULL);
+  sLine_onMessage(_c, &Context(_c)->sLine_0m3G5PYn, 0, m, NULL);
 }
 
-void Heavy_logue_wavefolder::cReceive_W1tkqv6Y_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
-  sPhasor_k_onMessage(_c, &Context(_c)->sPhasor_6myptfwv, 0, m);
+void Heavy_logue_wavefolder::cReceive_QhDqryXR_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
+  sPhasor_k_onMessage(_c, &Context(_c)->sPhasor_R7WNrk1F, 0, m);
 }
 
-void Heavy_logue_wavefolder::cReceive_TjUVQciC_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
-  cMsg_Z8ErjHnt_sendMessage(_c, 0, m);
+void Heavy_logue_wavefolder::cReceive_S9hBs5rR_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
+  cMsg_QqBHe7oq_sendMessage(_c, 0, m);
 }
 
-void Heavy_logue_wavefolder::cReceive_ovyMMhYL_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
-  cMsg_qlgHHV90_sendMessage(_c, 0, m);
+void Heavy_logue_wavefolder::cReceive_G70QHmji_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
+  cMsg_w53X4xyI_sendMessage(_c, 0, m);
 }
 
-void Heavy_logue_wavefolder::cReceive_vp5vb5BT_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
-  cMsg_WNTkrTB2_sendMessage(_c, 0, m);
+void Heavy_logue_wavefolder::cReceive_AeotVo6w_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
+  cMsg_WJk43TsJ_sendMessage(_c, 0, m);
 }
 
-void Heavy_logue_wavefolder::cReceive_6xpn4S0b_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
-  cMsg_MhWktToE_sendMessage(_c, 0, m);
+void Heavy_logue_wavefolder::cReceive_PorV2Prt_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
+  cMsg_sYvw3AbU_sendMessage(_c, 0, m);
 }
 
 
@@ -246,7 +246,7 @@ int Heavy_logue_wavefolder::process(float **inputBuffers, float **outputBuffers,
     __hv_zero_f(VOf(O0));
 
     // process all signal functions
-    __hv_phasor_k_f(&sPhasor_6myptfwv, VOf(Bf0));
+    __hv_phasor_k_f(&sPhasor_R7WNrk1F, VOf(Bf0));
     __hv_var_k_f(VOf(Bf1), 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f);
     __hv_sub_f(VIf(Bf0), VIf(Bf1), VOf(Bf1));
     __hv_abs_f(VIf(Bf1), VOf(Bf1));
@@ -261,12 +261,12 @@ int Heavy_logue_wavefolder::process(float **inputBuffers, float **outputBuffers,
     __hv_var_k_f(VOf(Bf4), -0.166666666666667f, -0.166666666666667f, -0.166666666666667f, -0.166666666666667f, -0.166666666666667f, -0.166666666666667f, -0.166666666666667f, -0.166666666666667f);
     __hv_fma_f(VIf(Bf2), VIf(Bf4), VIf(Bf1), VOf(Bf1));
     __hv_fma_f(VIf(Bf0), VIf(Bf3), VIf(Bf1), VOf(Bf1));
-    __hv_line_f(&sLine_kEughDpV, VOf(Bf3));
-    __hv_line_f(&sLine_WnT5HiOq, VOf(Bf0));
+    __hv_line_f(&sLine_0m3G5PYn, VOf(Bf3));
+    __hv_line_f(&sLine_evXJRgob, VOf(Bf0));
     __hv_var_k_f(VOf(Bf4), 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f);
     __hv_fma_f(VIf(Bf3), VIf(Bf0), VIf(Bf4), VOf(Bf4));
-    __hv_line_f(&sLine_hKeXzF7i, VOf(Bf0));
-    __hv_line_f(&sLine_Uhj43Got, VOf(Bf3));
+    __hv_line_f(&sLine_SFtwpL1a, VOf(Bf0));
+    __hv_line_f(&sLine_5eF5z6xW, VOf(Bf3));
     __hv_add_f(VIf(Bf0), VIf(Bf3), VOf(Bf3));
     __hv_fma_f(VIf(Bf1), VIf(Bf4), VIf(Bf3), VOf(Bf3));
     __hv_var_k_f(VOf(Bf4), 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f);

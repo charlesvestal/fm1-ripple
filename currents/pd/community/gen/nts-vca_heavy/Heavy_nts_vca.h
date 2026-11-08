@@ -1,4 +1,4 @@
-/** the author of nts-vca.pd */
+/** Copyright (c) 2025 boochow Instruments (loguesdk_hvcc_examples, nts1mkii_hvcc_examples) / Copyright (c) 2026 boochow Instruments (drumlogue_hvcc_examples). MIT License (LICENSE beside nts-vca.pd) */
 
 #ifndef _HEAVY_NTS_VCA_H_
 #define _HEAVY_NTS_VCA_H_

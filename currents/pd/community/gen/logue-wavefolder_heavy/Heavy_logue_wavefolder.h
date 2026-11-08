@@ -1,4 +1,4 @@
-/** the author of logue-wavefolder.pd */
+/** Copyright (c) 2025 boochow Instruments (loguesdk_hvcc_examples, nts1mkii_hvcc_examples) / Copyright (c) 2026 boochow Instruments (drumlogue_hvcc_examples). MIT License (LICENSE beside logue-wavefolder.pd) */
 
 #ifndef _HEAVY_LOGUE_WAVEFOLDER_H_
 #define _HEAVY_LOGUE_WAVEFOLDER_H_

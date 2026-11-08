@@ -1,4 +1,4 @@
-/** the author of logue-chiptune.pd */
+/** Copyright (c) 2025 boochow Instruments (loguesdk_hvcc_examples, nts1mkii_hvcc_examples) / Copyright (c) 2026 boochow Instruments (drumlogue_hvcc_examples). MIT License (LICENSE beside logue-chiptune.pd) */
 
 #include "Heavy_logue_chiptune.hpp"
 
@@ -25,10 +25,10 @@
 
 Heavy_logue_chiptune::Heavy_logue_chiptune(float sampleRate, int poolKb, int inQueueKb, int outQueueKb)
     : HeavyContext(sampleRate, poolKb, inQueueKb, outQueueKb) {
-  numBytes += sPhasor_k_init(&sPhasor_bbXS8PpO, 440.0f, sampleRate);
-  numBytes += sLine_init(&sLine_MHd42UYE);
-  numBytes += sLine_init(&sLine_NA8PQgEj);
-  numBytes += sLine_init(&sLine_mT9bCayt);
+  numBytes += sPhasor_k_init(&sPhasor_h5JY1ejU, 440.0f, sampleRate);
+  numBytes += sLine_init(&sLine_LpyM1KIX);
+  numBytes += sLine_init(&sLine_zd7k6GQn);
+  numBytes += sLine_init(&sLine_ZNKLBpXT);
   
 }
 
@@ -43,11 +43,11 @@ HvTable *Heavy_logue_chiptune::getTableForHash(hv_uint32_t tableHash) {
 void Heavy_logue_chiptune::scheduleMessageForReceiver(hv_uint32_t receiverHash, HvMessage *m) {
   switch (receiverHash) {
     case 0x8B2148DD: { // pitch
-      mq_addMessageByTimestamp(&mq, m, 0, &cReceive_fxvhc9LV_sendMessage);
+      mq_addMessageByTimestamp(&mq, m, 0, &cReceive_EwrlDDbC_sendMessage);
       break;
     }
     case 0xCE6D0368: { // waveform
-      mq_addMessageByTimestamp(&mq, m, 0, &cReceive_HetBPjXM_sendMessage);
+      mq_addMessageByTimestamp(&mq, m, 0, &cReceive_qIPHyBJQ_sendMessage);
       break;
     }
     default: return;
@@ -96,53 +96,53 @@ int Heavy_logue_chiptune::getParameterInfo(int index, HvParameterInfo *info) {
  */
 
 
-void Heavy_logue_chiptune::cBinop_teicgtK9_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
-  cMsg_iUiM5ZPG_sendMessage(_c, 0, m);
+void Heavy_logue_chiptune::cBinop_1a71Ygnz_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
+  cMsg_aBenQnZE_sendMessage(_c, 0, m);
 }
 
-void Heavy_logue_chiptune::cBinop_S7D2bQmn_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
-  cMsg_Nt61CCOZ_sendMessage(_c, 0, m);
+void Heavy_logue_chiptune::cBinop_5nt96xjH_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
+  cMsg_6t2hHGKC_sendMessage(_c, 0, m);
 }
 
-void Heavy_logue_chiptune::cBinop_z2Nrd5qq_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
-  cMsg_i9JVryyT_sendMessage(_c, 0, m);
+void Heavy_logue_chiptune::cBinop_cgmsAIVT_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
+  cMsg_XCNswlb8_sendMessage(_c, 0, m);
 }
 
-void Heavy_logue_chiptune::cMsg_iUiM5ZPG_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *const n) {
+void Heavy_logue_chiptune::cMsg_aBenQnZE_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *const n) {
   HvMessage *m = nullptr;
   m = HV_MESSAGE_ON_STACK(2);
   msg_init(m, 2, msg_getTimestamp(n));
   msg_setElementToFrom(m, 0, n, 0);
   msg_setFloat(m, 1, 10.0f);
-  sLine_onMessage(_c, &Context(_c)->sLine_NA8PQgEj, 0, m, NULL);
+  sLine_onMessage(_c, &Context(_c)->sLine_zd7k6GQn, 0, m, NULL);
 }
 
-void Heavy_logue_chiptune::cMsg_Nt61CCOZ_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *const n) {
+void Heavy_logue_chiptune::cMsg_6t2hHGKC_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *const n) {
   HvMessage *m = nullptr;
   m = HV_MESSAGE_ON_STACK(2);
   msg_init(m, 2, msg_getTimestamp(n));
   msg_setElementToFrom(m, 0, n, 0);
   msg_setFloat(m, 1, 10.0f);
-  sLine_onMessage(_c, &Context(_c)->sLine_mT9bCayt, 0, m, NULL);
+  sLine_onMessage(_c, &Context(_c)->sLine_ZNKLBpXT, 0, m, NULL);
 }
 
-void Heavy_logue_chiptune::cMsg_i9JVryyT_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *const n) {
+void Heavy_logue_chiptune::cMsg_XCNswlb8_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *const n) {
   HvMessage *m = nullptr;
   m = HV_MESSAGE_ON_STACK(2);
   msg_init(m, 2, msg_getTimestamp(n));
   msg_setElementToFrom(m, 0, n, 0);
   msg_setFloat(m, 1, 10.0f);
-  sLine_onMessage(_c, &Context(_c)->sLine_MHd42UYE, 0, m, NULL);
+  sLine_onMessage(_c, &Context(_c)->sLine_LpyM1KIX, 0, m, NULL);
 }
 
-void Heavy_logue_chiptune::cReceive_fxvhc9LV_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
-  sPhasor_k_onMessage(_c, &Context(_c)->sPhasor_bbXS8PpO, 0, m);
+void Heavy_logue_chiptune::cReceive_EwrlDDbC_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
+  sPhasor_k_onMessage(_c, &Context(_c)->sPhasor_h5JY1ejU, 0, m);
 }
 
-void Heavy_logue_chiptune::cReceive_HetBPjXM_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
-  cBinop_k_onMessage(_c, NULL, HV_BINOP_EQ, 0.0f, 0, m, &cBinop_teicgtK9_sendMessage);
-  cBinop_k_onMessage(_c, NULL, HV_BINOP_EQ, 1.0f, 0, m, &cBinop_S7D2bQmn_sendMessage);
-  cBinop_k_onMessage(_c, NULL, HV_BINOP_EQ, 2.0f, 0, m, &cBinop_z2Nrd5qq_sendMessage);
+void Heavy_logue_chiptune::cReceive_qIPHyBJQ_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
+  cBinop_k_onMessage(_c, NULL, HV_BINOP_EQ, 0.0f, 0, m, &cBinop_1a71Ygnz_sendMessage);
+  cBinop_k_onMessage(_c, NULL, HV_BINOP_EQ, 1.0f, 0, m, &cBinop_5nt96xjH_sendMessage);
+  cBinop_k_onMessage(_c, NULL, HV_BINOP_EQ, 2.0f, 0, m, &cBinop_cgmsAIVT_sendMessage);
 }
 
 
@@ -199,7 +199,7 @@ int Heavy_logue_chiptune::process(float **inputBuffers, float **outputBuffers, i
     __hv_zero_f(VOf(O0));
 
     // process all signal functions
-    __hv_phasor_k_f(&sPhasor_bbXS8PpO, VOf(Bf0));
+    __hv_phasor_k_f(&sPhasor_h5JY1ejU, VOf(Bf0));
     __hv_var_k_f(VOf(Bf1), 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f);
     __hv_sub_f(VIf(Bf0), VIf(Bf1), VOf(Bf1));
     __hv_abs_f(VIf(Bf1), VOf(Bf1));
@@ -207,19 +207,19 @@ int Heavy_logue_chiptune::process(float **inputBuffers, float **outputBuffers, i
     __hv_sub_f(VIf(Bf1), VIf(Bf2), VOf(Bf2));
     __hv_var_k_f(VOf(Bf1), 4.0f, 4.0f, 4.0f, 4.0f, 4.0f, 4.0f, 4.0f, 4.0f);
     __hv_mul_f(VIf(Bf2), VIf(Bf1), VOf(Bf1));
-    __hv_line_f(&sLine_MHd42UYE, VOf(Bf2));
+    __hv_line_f(&sLine_LpyM1KIX, VOf(Bf2));
     __hv_var_k_f(VOf(Bf3), 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f);
     __hv_mul_f(VIf(Bf0), VIf(Bf3), VOf(Bf3));
     __hv_var_k_f(VOf(Bf4), 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f);
     __hv_sub_f(VIf(Bf3), VIf(Bf4), VOf(Bf4));
-    __hv_line_f(&sLine_NA8PQgEj, VOf(Bf5));
+    __hv_line_f(&sLine_zd7k6GQn, VOf(Bf5));
     __hv_var_k_f(VOf(Bf6), 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f);
     __hv_add_f(VIf(Bf0), VIf(Bf6), VOf(Bf6));
     __hv_floor_f(VIf(Bf6), VOf(Bf0));
     __hv_sub_f(VIf(Bf6), VIf(Bf0), VOf(Bf0));
     __hv_var_k_f(VOf(Bf6), -2.0f, -2.0f, -2.0f, -2.0f, -2.0f, -2.0f, -2.0f, -2.0f);
     __hv_fma_f(VIf(Bf0), VIf(Bf6), VIf(Bf3), VOf(Bf3));
-    __hv_line_f(&sLine_mT9bCayt, VOf(Bf6));
+    __hv_line_f(&sLine_ZNKLBpXT, VOf(Bf6));
     __hv_mul_f(VIf(Bf3), VIf(Bf6), VOf(Bf6));
     __hv_fma_f(VIf(Bf4), VIf(Bf5), VIf(Bf6), VOf(Bf6));
     __hv_fma_f(VIf(Bf1), VIf(Bf2), VIf(Bf6), VOf(Bf6));

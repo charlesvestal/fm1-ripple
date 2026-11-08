@@ -1,4 +1,4 @@
-/** the author of nts-bitcrush.pd */
+/** Copyright (c) 2025 boochow Instruments (loguesdk_hvcc_examples, nts1mkii_hvcc_examples) / Copyright (c) 2026 boochow Instruments (drumlogue_hvcc_examples). MIT License (LICENSE beside nts-bitcrush.pd) */
 
 #include "Heavy_nts_bitcrush.hpp"
 
@@ -25,10 +25,10 @@
 
 Heavy_nts_bitcrush::Heavy_nts_bitcrush(float sampleRate, int poolKb, int inQueueKb, int outQueueKb)
     : HeavyContext(sampleRate, poolKb, inQueueKb, outQueueKb) {
-  numBytes += sVarf_init(&sVarf_rAeXTnsH, 4.0f, 0.0f, false);
-  numBytes += sVarf_init(&sVarf_nl11h4xx, 0.25f, 0.0f, false);
-  numBytes += sVarf_init(&sVarf_hIN50NZb, 0.0f, 0.0f, false);
-  numBytes += sVarf_init(&sVarf_s9Sb2ief, 0.0f, 0.0f, false);
+  numBytes += sVarf_init(&sVarf_ZKGK1Vvy, 4.0f, 0.0f, false);
+  numBytes += sVarf_init(&sVarf_bGUtXRpE, 0.25f, 0.0f, false);
+  numBytes += sVarf_init(&sVarf_er7qHcJq, 0.0f, 0.0f, false);
+  numBytes += sVarf_init(&sVarf_XwBJn0QJ, 0.0f, 0.0f, false);
   
 }
 
@@ -43,11 +43,11 @@ HvTable *Heavy_nts_bitcrush::getTableForHash(hv_uint32_t tableHash) {
 void Heavy_nts_bitcrush::scheduleMessageForReceiver(hv_uint32_t receiverHash, HvMessage *m) {
   switch (receiverHash) {
     case 0xC21FE6A3: { // depth_f
-      mq_addMessageByTimestamp(&mq, m, 0, &cReceive_B2JQwy6Y_sendMessage);
+      mq_addMessageByTimestamp(&mq, m, 0, &cReceive_RTb3SZvd_sendMessage);
       break;
     }
     case 0x8E55AA5F: { // time
-      mq_addMessageByTimestamp(&mq, m, 0, &cReceive_L6b13QRC_sendMessage);
+      mq_addMessageByTimestamp(&mq, m, 0, &cReceive_BpTuQhHl_sendMessage);
       break;
     }
     default: return;
@@ -96,30 +96,30 @@ int Heavy_nts_bitcrush::getParameterInfo(int index, HvParameterInfo *info) {
  */
 
 
-void Heavy_nts_bitcrush::cBinop_w0m6FGty_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
-  sVarf_onMessage(_c, &Context(_c)->sVarf_rAeXTnsH, m);
-  cBinop_k_onMessage(_c, NULL, HV_BINOP_POW, -1.0f, 0, m, &cBinop_FiKkXCFR_sendMessage);
+void Heavy_nts_bitcrush::cBinop_Bxz2AZo3_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
+  sVarf_onMessage(_c, &Context(_c)->sVarf_ZKGK1Vvy, m);
+  cBinop_k_onMessage(_c, NULL, HV_BINOP_POW, -1.0f, 0, m, &cBinop_anhpxAna_sendMessage);
 }
 
-void Heavy_nts_bitcrush::cBinop_FiKkXCFR_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
-  sVarf_onMessage(_c, &Context(_c)->sVarf_nl11h4xx, m);
+void Heavy_nts_bitcrush::cBinop_anhpxAna_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
+  sVarf_onMessage(_c, &Context(_c)->sVarf_bGUtXRpE, m);
 }
 
-void Heavy_nts_bitcrush::cBinop_nQaFaO1I_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
-  cBinop_k_onMessage(_c, NULL, HV_BINOP_ADD, 1.0f, 0, m, &cBinop_6UAt5J9B_sendMessage);
+void Heavy_nts_bitcrush::cBinop_pwM2nCkE_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
+  cBinop_k_onMessage(_c, NULL, HV_BINOP_ADD, 1.0f, 0, m, &cBinop_ceY285i6_sendMessage);
 }
 
-void Heavy_nts_bitcrush::cBinop_6UAt5J9B_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
-  sVarf_onMessage(_c, &Context(_c)->sVarf_s9Sb2ief, m);
+void Heavy_nts_bitcrush::cBinop_ceY285i6_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
+  sVarf_onMessage(_c, &Context(_c)->sVarf_XwBJn0QJ, m);
 }
 
-void Heavy_nts_bitcrush::cReceive_L6b13QRC_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
-  cBinop_k_onMessage(_c, NULL, HV_BINOP_POW, 2.0f, 0, m, &cBinop_w0m6FGty_sendMessage);
+void Heavy_nts_bitcrush::cReceive_BpTuQhHl_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
+  cBinop_k_onMessage(_c, NULL, HV_BINOP_POW, 2.0f, 0, m, &cBinop_Bxz2AZo3_sendMessage);
 }
 
-void Heavy_nts_bitcrush::cReceive_B2JQwy6Y_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
-  cBinop_k_onMessage(_c, NULL, HV_BINOP_MULTIPLY, -1.0f, 0, m, &cBinop_nQaFaO1I_sendMessage);
-  sVarf_onMessage(_c, &Context(_c)->sVarf_hIN50NZb, m);
+void Heavy_nts_bitcrush::cReceive_RTb3SZvd_sendMessage(HeavyContextInterface *_c, int letIn, const HvMessage *m) {
+  cBinop_k_onMessage(_c, NULL, HV_BINOP_MULTIPLY, -1.0f, 0, m, &cBinop_pwM2nCkE_sendMessage);
+  sVarf_onMessage(_c, &Context(_c)->sVarf_er7qHcJq, m);
 }
 
 
@@ -181,22 +181,22 @@ int Heavy_nts_bitcrush::process(float **inputBuffers, float **outputBuffers, int
 
     // process all signal functions
     __hv_add_f(VIf(I0), VIf(I1), VOf(Bf0));
-    __hv_varread_f(&sVarf_rAeXTnsH, VOf(Bf1));
+    __hv_varread_f(&sVarf_ZKGK1Vvy, VOf(Bf1));
     __hv_mul_f(VIf(Bf0), VIf(Bf1), VOf(Bf1));
     __hv_floor_f(VIf(Bf1), VOf(Bf0));
     __hv_sub_f(VIf(Bf1), VIf(Bf0), VOf(Bf0));
     __hv_sub_f(VIf(Bf1), VIf(Bf0), VOf(Bf0));
-    __hv_varread_f(&sVarf_nl11h4xx, VOf(Bf1));
+    __hv_varread_f(&sVarf_bGUtXRpE, VOf(Bf1));
     __hv_mul_f(VIf(Bf0), VIf(Bf1), VOf(Bf1));
-    __hv_varread_f(&sVarf_hIN50NZb, VOf(Bf0));
+    __hv_varread_f(&sVarf_er7qHcJq, VOf(Bf0));
     __hv_mul_f(VIf(Bf1), VIf(Bf0), VOf(Bf0));
     __hv_add_f(VIf(I0), VIf(I1), VOf(Bf1));
-    __hv_varread_f(&sVarf_s9Sb2ief, VOf(Bf2));
+    __hv_varread_f(&sVarf_XwBJn0QJ, VOf(Bf2));
     __hv_mul_f(VIf(Bf1), VIf(Bf2), VOf(Bf2));
     __hv_add_f(VIf(Bf0), VIf(Bf2), VOf(Bf1));
-    __hv_add_f(VIf(Bf1), VIf(O0), VOf(O0));
+    __hv_add_f(VIf(Bf1), VIf(O1), VOf(O1));
     __hv_add_f(VIf(Bf0), VIf(Bf2), VOf(Bf2));
-    __hv_add_f(VIf(Bf2), VIf(O1), VOf(O1));
+    __hv_add_f(VIf(Bf2), VIf(O0), VOf(O0));
 
     // save output vars to output buffer
     __hv_store_f(outputBuffers[0]+n, VIf(O0));

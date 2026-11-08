@@ -1,4 +1,4 @@
-/** the author of dl-monosynth.pd */
+/** Copyright (c) 2025 boochow Instruments (loguesdk_hvcc_examples, nts1mkii_hvcc_examples) / Copyright (c) 2026 boochow Instruments (drumlogue_hvcc_examples). MIT License (LICENSE beside dl-monosynth.pd) */
 
 #ifndef _HEAVY_DL_MONOSYNTH_H_
 #define _HEAVY_DL_MONOSYNTH_H_

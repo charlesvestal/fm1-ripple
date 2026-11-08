@@ -1,4 +1,4 @@
-/** the author of pdpoly.pd */
+/** Copyright (c) 2026 Charles Vestal. MIT License (LICENSE beside pdpoly.pd) */
 
 #ifndef _HEAVY_PDPOLY_H_
 #define _HEAVY_PDPOLY_H_

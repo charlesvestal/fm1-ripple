@@ -1,4 +1,4 @@
-/** the author of nts-bitcrush.pd */
+/** Copyright (c) 2025 boochow Instruments (loguesdk_hvcc_examples, nts1mkii_hvcc_examples) / Copyright (c) 2026 boochow Instruments (drumlogue_hvcc_examples). MIT License (LICENSE beside nts-bitcrush.pd) */
 
 #ifndef _HEAVY_CONTEXT_NTS_BITCRUSH_HPP_
 #define _HEAVY_CONTEXT_NTS_BITCRUSH_HPP_
@@ -49,22 +49,22 @@ class Heavy_nts_bitcrush : public HeavyContext {
 
 
   // static sendMessage functions
-  static void cBinop_w0m6FGty_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cBinop_FiKkXCFR_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cBinop_nQaFaO1I_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cBinop_6UAt5J9B_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cReceive_L6b13QRC_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cReceive_B2JQwy6Y_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cBinop_Bxz2AZo3_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cBinop_anhpxAna_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cBinop_pwM2nCkE_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cBinop_ceY285i6_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cReceive_BpTuQhHl_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cReceive_RTb3SZvd_sendMessage(HeavyContextInterface *, int, const HvMessage *);
 
   // objects
-  SignalVarf sVarf_rAeXTnsH;
-  SignalVarf sVarf_nl11h4xx;
-  ControlBinop cBinop_w0m6FGty;
-  ControlBinop cBinop_FiKkXCFR;
-  ControlBinop cBinop_nQaFaO1I;
-  ControlBinop cBinop_6UAt5J9B;
-  SignalVarf sVarf_hIN50NZb;
-  SignalVarf sVarf_s9Sb2ief;
+  SignalVarf sVarf_ZKGK1Vvy;
+  SignalVarf sVarf_bGUtXRpE;
+  ControlBinop cBinop_Bxz2AZo3;
+  ControlBinop cBinop_anhpxAna;
+  ControlBinop cBinop_pwM2nCkE;
+  ControlBinop cBinop_ceY285i6;
+  SignalVarf sVarf_er7qHcJq;
+  SignalVarf sVarf_XwBJn0QJ;
 };
 
 #endif // _HEAVY_CONTEXT_NTS_BITCRUSH_HPP_

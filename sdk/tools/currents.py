@@ -216,9 +216,24 @@ def heavy_rewrite(text, fname, name):
         text = re.sub(r'extern "C" \{.*?\} // extern "C"', "", text, flags=re.S)
     if fname == "HvUtils.c":                        # the hash reads a word at a time from any address: the FM-1
         text = text.replace("#if HV_EMSCRIPTEN", "#if 1 /* the FM-1: no unaligned loads */")   # faults; byte by byte
+    if fname == "HvLightPipe.c":                    # its fence: a compiler barrier on every machine (the render
+        text = re.sub(r"#if __SSE__ \|\| HV_SIMD_SSE\n.*?\n#endif\n",  # and set never run at once), and no SSE or
+                      "#define hv_sfence() __asm__ volatile(\"\" : : : \"memory\")\n", text, flags=re.S)   # ACLE header
     if fname == "HvHeavy.cpp":                      # (and frees with delete)
         text = text.replace("  delete c;", "  (void) c;")
     return text
+
+
+def patch_copyright(pd):
+    """the copyright Heavy writes into the files it makes from the patch (hvcc --copyright): the copyright lines of the
+    LICENSE beside it (its first line, the licence's name, with them), else its author unnamed"""
+    lic = pd.parent / "LICENSE"
+    if lic.exists():
+        lines = lic.read_text().splitlines()
+        held = [l.strip() for l in lines if re.match(r"\s*copyright \(c\) \d", l, re.I)]
+        if held:
+            return f"{' / '.join(held)}. {lines[0].strip()} (LICENSE beside {pd.name})"
+    return f"the author of {pd.name}"
 
 
 def pd_to_cc(pd, work):
@@ -234,7 +249,7 @@ def pd_to_cc(pd, work):
             raise SystemExit(f"currents: no hvcc, and no {wrapper} to use instead")
         return wrapper
     tmp = Path(tempfile.mkdtemp(prefix="hvcc-"))
-    r = subprocess.run([hvcc, str(pd), "-o", str(tmp), "-n", name, "--copyright", f"the author of {pd.name}",
+    r = subprocess.run([hvcc, str(pd), "-o", str(tmp), "-n", name, "--copyright", patch_copyright(pd),
                         "-p", str(pd.parent / "lib"), str(SDK / "heavy" / "heavylib")],   # (abstractions: lib/ beside
                        # the patch, so they aren't taken for currents; and Wasted Audio's heavylib)
                        capture_output=True, text=True)

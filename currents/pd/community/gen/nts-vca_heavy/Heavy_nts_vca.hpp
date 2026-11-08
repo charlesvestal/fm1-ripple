@@ -1,4 +1,4 @@
-/** the author of nts-vca.pd */
+/** Copyright (c) 2025 boochow Instruments (loguesdk_hvcc_examples, nts1mkii_hvcc_examples) / Copyright (c) 2026 boochow Instruments (drumlogue_hvcc_examples). MIT License (LICENSE beside nts-vca.pd) */
 
 #ifndef _HEAVY_CONTEXT_NTS_VCA_HPP_
 #define _HEAVY_CONTEXT_NTS_VCA_HPP_
@@ -47,11 +47,11 @@ class Heavy_nts_vca : public HeavyContext {
 
 
   // static sendMessage functions
-  static void cMsg_ihAxPs1X_sendMessage(HeavyContextInterface *, int, const HvMessage *);
-  static void cReceive_jce0ag5G_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cMsg_aBGWQHnJ_sendMessage(HeavyContextInterface *, int, const HvMessage *);
+  static void cReceive_pS1fDXMi_sendMessage(HeavyContextInterface *, int, const HvMessage *);
 
   // objects
-  SignalLine sLine_QR1xHupr;
+  SignalLine sLine_1l9nQL1z;
 };
 
 #endif // _HEAVY_CONTEXT_NTS_VCA_HPP_

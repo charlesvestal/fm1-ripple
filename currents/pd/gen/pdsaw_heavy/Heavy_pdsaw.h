@@ -1,4 +1,4 @@
-/** the author of pdsaw.pd */
+/** Copyright (c) 2026 Charles Vestal. MIT License (LICENSE beside pdsaw.pd) */
 
 #ifndef _HEAVY_PDSAW_H_
 #define _HEAVY_PDSAW_H_
