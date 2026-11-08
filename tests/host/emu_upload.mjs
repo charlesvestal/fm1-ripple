@@ -43,13 +43,13 @@ run(800);
 check("hello after the boot", said.some((m) => m.what === "hello"));
 
 let r = ask({ what: "droplet", name: "plva", run: true, text:
-  'local c\nfunction init() c = current.load("plaits-va"); flow.set(c) end\n' +
+  'local c\nfunction init() c = current.load("macro-va"); flow.set(c) end\n' +
   'function key(k, vel) c:note(util.note(k), vel / 127) end\nfunction redraw() screen.clear(); screen.update() end\n' });
 run(400);
 check("a droplet put on the disk and started", r && r.ok, r && r.error);
 check("it runs", state() && state().mode === 1 && state().running === "plva.lua", JSON.stringify(state()));
 let p = key(9, 400);
-check("plaits-va plays in the emulator", p > 0.02 && p < 1, p.toFixed(3));
+check("macro-va plays in the emulator", p > 0.02 && p < 1, p.toFixed(3));
 
 r = ask({ what: "current", kind: "wasm", bytes: fs.readFileSync(process.argv[3]) });
 check("an uploaded current", r && r.ok && r.current.name === "webbeep" && r.current.voices === 1, JSON.stringify(r));

@@ -1,5 +1,5 @@
 -- mono: a monophonic synth with a filter and an envelope, through a stereo chorus. The last key held plays.
--- Currents: dl-monosynth and nts-chorus (Pd patches by boochow).
+-- Currents: monosynth and chorus (Pd patches by boochow).
 -- ALGORITHM the wave (saw, pulse), K1 the cutoff, K2 the resonance, K3 how much the envelope opens the filter,
 -- K4 the release. SAVE keeps the sound.
 
@@ -20,8 +20,8 @@ local function apply()
 end
 
 function init()
-  synth = current.load("dl-monosynth")
-  chorus = current.load("nts-chorus")
+  synth = current.load("monosynth")
+  chorus = current.load("chorus")
   flow.set(synth, chorus)
   flow.level(0.6)
   chorus:set("mix_f", 0.45)

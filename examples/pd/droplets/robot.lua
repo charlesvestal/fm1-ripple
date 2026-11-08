@@ -1,5 +1,5 @@
 -- robot: a drum beat sung through a vocoder. The drums are the voice, the keys the note it sings.
--- Currents: drums (built in), nts-vocoder and nts-vca (Pd patches by boochow).
+-- Currents: drums (built in), vocoder and vca (Pd patches by boochow).
 -- K1 and K2 the two notes the vocoder adds above the key (semitones), K3 how long its bands ring, K4 the tempo.
 -- PLAY starts and stops the beat.
 
@@ -22,8 +22,8 @@ end
 
 function init()
   drums = current.load("drums")
-  voc = current.load("nts-vocoder")
-  gain = current.load("nts-vca")
+  voc = current.load("vocoder")
+  gain = current.load("vca")
   flow.set(drums, voc, gain)
   gain:set("depth_f", GAIN)                     -- the vocoder's bands add up above full scale: turned down
   flow.level(0.6)

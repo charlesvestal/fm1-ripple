@@ -2,7 +2,7 @@
 // Copyright (C) 2026 Charles Vestal
 // A Ripple current of Mutable Instruments Plaits engines (Emilie Gillet, MIT; LOOM-8's freestanding build of
 // Plaits 1.2, plaits_voice.cc). A group's file defines, then includes this:
-//   PC_NAME      "plaits-synth"
+//   PC_NAME      "macro-synth"
 //   PC_ENGINES   its engines, Plaits' numbers (plaits_voice.h), in the order "model" picks them
 //   PC_VOICES    notes at once (each voice room for the group's largest engine)
 //   PC_STRUCK    the engines that decay by themselves (a bit each, Plaits' numbers): struck, not held

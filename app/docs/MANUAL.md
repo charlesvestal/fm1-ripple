@@ -232,8 +232,8 @@ Play FX, as e16-launcher has them.
 | OCT− · OCT+ | Move the keys an octave. |
 | SAVE | Keeps the rack: its currents, their knobs, the MIDI effects. |
 
-Among the voices are seventeen of Mutable Instruments Plaits' engines (`plaits-va`, `plaits-modal`, `plaits-kick` and
-the rest): K1–K3 are Plaits' harmonics, timbre and morph. Three more (`plaits-wave`, `plaits-dx`, `plaits-speech`)
+Among the voices are seventeen macro-oscillator engines (`macro-va`, `macro-modal`, `macro-kick` and the rest), from
+Emilie Gillet's open-source code: K1–K3 are each engine's harmonics, timbre and morph. Three more (`macro-wave`, `macro-sixop`, `macro-speech`)
 are on each release, to copy into `currents` on the disk in disk mode.
 
 Each release also has four droplets that play Pd patches from the community (`robot`, `chip`, `fold`, `mono`) and

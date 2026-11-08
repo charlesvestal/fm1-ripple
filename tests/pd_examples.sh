@@ -6,7 +6,7 @@ cd "$(dirname "$0")/.."
 out=app/build/scenarios/pd_examples
 rm -rf $out && mkdir -p $out/disk/droplets $out/disk/currents
 cp examples/pd/droplets/*.lua $out/disk/droplets/
-for c in dl-monosynth logue-chiptune logue-wavefolder nts-bitcrush nts-chorus nts-freqshift nts-reflection nts-vca nts-vocoder; do
+for c in monosynth chiptune wavefolder bitcrush chorus freqshift reflect vca vocoder; do
     cp app/build/extra/$c.cur $out/disk/currents/
 done
 python3 tools/mkdisk.py $out/disk --img $out/pd.img >/dev/null

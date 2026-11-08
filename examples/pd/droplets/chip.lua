@@ -1,5 +1,5 @@
 -- chip: an arpeggiator on a chiptune oscillator, crushed and widened. Hold keys and it plays them, up an octave and
--- back. Currents: logue-chiptune, nts-vca, nts-bitcrush, nts-chorus (Pd patches by boochow).
+-- back. Currents: chiptune, vca, bitcrush, chorus (Pd patches by boochow).
 -- ALGORITHM the wave (pulse, triangle, noise), K1 how much it crushes, K2 its rate, K3 the gate length, K4 the tempo.
 
 local osc, vca, crush, chorus
@@ -26,10 +26,10 @@ local function apply()
 end
 
 function init()
-  osc = current.load("logue-chiptune")
-  vca = current.load("nts-vca")
-  crush = current.load("nts-bitcrush")
-  chorus = current.load("nts-chorus")
+  osc = current.load("chiptune")
+  vca = current.load("vca")
+  crush = current.load("bitcrush")
+  chorus = current.load("chorus")
   flow.set(osc, vca, crush, chorus)
   flow.level(0.6)
   vca:set("depth_f", 0)                         -- the oscillator never stops: the VCA is its gate

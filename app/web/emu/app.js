@@ -11,7 +11,7 @@ const DROPLET = `-- a droplet: the keys play a current
 local voice, delay
 
 function init()
-  voice = current.load("plaits-va")
+  voice = current.load("macro-va")
   delay = current.load("delay")
   flow.set(voice, delay)
 end
@@ -56,7 +56,7 @@ process = (os.sawtooth(freq) + os.square(freq * 1.005)) * 0.5
 let node = null, ready = false, nextId = 1, faust = null;
 let running = "";                          // the droplet the FM-1 runs now ("" the list), from the worklet's state
 
-// _try: a droplet the page writes to play a current on its own: the keys play it (an effect: after a Plaits voice),
+// _try: a droplet the page writes to play a current on its own: the keys play it (an effect: after a macro voice),
 // K1-K4 its first four knobs
 const TRY = "_try";
 const tryDroplet = (name) => `-- _try: written by the emulator page, to play the current ${name}
@@ -64,7 +64,7 @@ local c, src, ps, vals = nil, nil, {}, {}
 function init()
   c = current.load("${name}")
   if c.voices == 0 then
-    src = current.load("plaits-va")
+    src = current.load("macro-va")
     flow.set(src, c)
   else
     src = c
@@ -91,7 +91,7 @@ function redraw()
   screen.text(12, 12, "${name}")
   screen.font(1)
   screen.level(8)
-  screen.text(12, 50, c.voices == 0 and "an effect, after plaits-va: the keys play" or "the keys play it")
+  screen.text(12, 50, c.voices == 0 and "an effect, after macro-va: the keys play" or "the keys play it")
   for i = 1, 4 do
     local p = ps[i]
     if p then

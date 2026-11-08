@@ -144,7 +144,7 @@ A current made of more files names them, and its flags, in lines of its own:
 ```
 
 The paths are relative to the current's file, and the other files are built once for each set of flags; only what
-the current uses is kept. `currents/plaits-va.cc` and `currents/plaits/plaits_current.h` are an example: one of
+the current uses is kept. `currents/macro-va.cc` and `currents/plaits/plaits_current.h` are an example: one of
 Plaits' engines a current, from the same shared source.
 
 ## In the emulator

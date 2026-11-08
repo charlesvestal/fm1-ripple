@@ -1,5 +1,5 @@
 -- fold: a drone through a wavefolder, slowly shifting in frequency and ringing in a small room. The keys move its
--- root. Currents: logue-wavefolder, nts-vca, nts-freqshift, nts-reflection (Pd patches by boochow).
+-- root. Currents: wavefolder, vca, freqshift, reflect (Pd patches by boochow).
 -- K1 how hard it folds, K2 the frequency shift (Hz), K3 the room, K4 how fast it moves.
 
 local osc, gain, shift, room
@@ -16,10 +16,10 @@ local function apply()
 end
 
 function init()
-  osc = current.load("logue-wavefolder")
-  gain = current.load("nts-vca")
-  shift = current.load("nts-freqshift")
-  room = current.load("nts-reflection")
+  osc = current.load("wavefolder")
+  gain = current.load("vca")
+  shift = current.load("freqshift")
+  room = current.load("reflect")
   flow.set(osc, gain, shift, room)
   gain:set("depth_f", GAIN)                     -- the oscillator is full scale and the room adds to it: turned down
   flow.level(0.6)

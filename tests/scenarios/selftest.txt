@@ -191,9 +191,9 @@ press HOME
 wait 1200
 release HOME
 wait 100
-# every Plaits engine (tests/disk/droplets/plaitstest.lua): the 17 built in, then plaits-dx, -speech and -wave from
+# every macro engine (tests/disk/droplets/macrotest.lua): the 17 built in, then macro-sixop, -speech and -wave from
 # the disk, each model of them: loaded alone, a note struck, its sound
-start plaitstest
+start macrotest
 wait 300
 expect error 0
 tap EDIT
