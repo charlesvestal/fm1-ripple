@@ -1,0 +1,449 @@
+{
+ "bitcrush": {
+  "image": 5240,
+  "ins": 2,
+  "name": "bitcrush",
+  "params": [
+   [
+    "depth_f",
+    0.0,
+    1.0,
+    0.5
+   ],
+   [
+    "time",
+    1.0,
+    8.0,
+    4.0
+   ]
+  ],
+  "state": 8632,
+  "voices": 0
+ },
+ "chiptune": {
+  "image": 6136,
+  "ins": 0,
+  "name": "chiptune",
+  "params": [
+   [
+    "waveform",
+    0.0,
+    2.0,
+    0.0
+   ]
+  ],
+  "state": 8672,
+  "voices": 1
+ },
+ "chorus": {
+  "image": 10296,
+  "ins": 2,
+  "name": "chorus",
+  "params": [
+   [
+    "depth_f",
+    0.5,
+    1.5,
+    1.0
+   ],
+   [
+    "mix_f",
+    0.0,
+    1.0,
+    0.5
+   ],
+   [
+    "time_f",
+    0.1,
+    10.0,
+    0.5
+   ]
+  ],
+  "state": 56344,
+  "voices": 0
+ },
+ "fm": {
+  "image": 3440,
+  "ins": 0,
+  "name": "fm",
+  "params": [
+   [
+    "attack",
+    0.001,
+    2.0,
+    0.003
+   ],
+   [
+    "fall",
+    0.01,
+    4.0,
+    0.4
+   ],
+   [
+    "feedback",
+    0.0,
+    1.0,
+    0.0
+   ],
+   [
+    "floor",
+    0.0,
+    1.0,
+    0.2
+   ],
+   [
+    "index",
+    0.0,
+    12.0,
+    3.0
+   ],
+   [
+    "ratio",
+    0.5,
+    8.0,
+    2.0
+   ],
+   [
+    "release",
+    0.01,
+    6.0,
+    0.6
+   ]
+  ],
+  "state": 4868,
+  "voices": 6
+ },
+ "freqshift": {
+  "image": 9392,
+  "ins": 2,
+  "name": "freqshift",
+  "params": [
+   [
+    "depth_f",
+    0.0,
+    1.0,
+    1.0
+   ],
+   [
+    "time",
+    -200.0,
+    200.0,
+    100.0
+   ]
+  ],
+  "state": 9968,
+  "voices": 0
+ },
+ "monosynth": {
+  "image": 19304,
+  "ins": 0,
+  "name": "monosynth",
+  "params": [
+   [
+    "_1_wvform_f",
+    0.0,
+    1.0,
+    0.0
+   ],
+   [
+    "_2_PWM_f",
+    0.0,
+    1.0,
+    0.0
+   ],
+   [
+    "_3_cutoff_f",
+    -1.0,
+    1.0,
+    0.5
+   ],
+   [
+    "_4_Attack_f",
+    0.0,
+    1.0,
+    0.0
+   ],
+   [
+    "_5_Decay_f",
+    0.0,
+    1.0,
+    0.0
+   ],
+   [
+    "_6_Sustain_f",
+    0.0,
+    1.0,
+    1.0
+   ],
+   [
+    "_7_Release_f",
+    0.0,
+    1.0,
+    0.0
+   ],
+   [
+    "fltrenv_f",
+    -1.0,
+    1.0,
+    0.0
+   ],
+   [
+    "fltrrez_f",
+    -1.0,
+    1.0,
+    0.0
+   ]
+  ],
+  "state": 12600,
+  "voices": 1
+ },
+ "pdpoly": {
+  "image": 36768,
+  "ins": 0,
+  "name": "pdpoly",
+  "params": [
+   [
+    "cutoff",
+    100.0,
+    8000.0,
+    1500.0
+   ],
+   [
+    "volume",
+    0.0,
+    1.0,
+    0.3
+   ]
+  ],
+  "state": 11424,
+  "voices": 1
+ },
+ "pdsaw": {
+  "image": 13288,
+  "ins": 0,
+  "name": "pdsaw",
+  "params": [
+   [
+    "cutoff",
+    100.0,
+    8000.0,
+    1200.0
+   ],
+   [
+    "volume",
+    0.0,
+    1.0,
+    0.5
+   ]
+  ],
+  "state": 9560,
+  "voices": 1
+ },
+ "plate": {
+  "image": 3192,
+  "ins": 2,
+  "name": "plate",
+  "params": [
+   [
+    "damp",
+    0.0,
+    1.0,
+    0.4
+   ],
+   [
+    "decay",
+    0.0,
+    0.97,
+    0.8
+   ],
+   [
+    "mix",
+    0.0,
+    1.0,
+    0.3
+   ],
+   [
+    "size",
+    0.2,
+    1.0,
+    0.8
+   ]
+  ],
+  "state": 38540,
+  "voices": 0
+ },
+ "pluck": {
+  "image": 3928,
+  "ins": 0,
+  "name": "pluck",
+  "params": [
+   [
+    "bright",
+    0.0,
+    1.0,
+    0.7
+   ],
+   [
+    "damp",
+    0.0,
+    1.0,
+    0.4
+   ],
+   [
+    "decay",
+    0.9,
+    0.9995,
+    0.996
+   ]
+  ],
+  "state": 29396,
+  "voices": 6
+ },
+ "reflect": {
+  "image": 11224,
+  "ins": 2,
+  "name": "reflect",
+  "params": [
+   [
+    "depth_f",
+    0.0,
+    1.0,
+    0.5
+   ],
+   [
+    "time_f",
+    0.0,
+    1.0,
+    0.5
+   ]
+  ],
+  "state": 34448,
+  "voices": 0
+ },
+ "vca": {
+  "image": 4280,
+  "ins": 2,
+  "name": "vca",
+  "params": [
+   [
+    "depth_f",
+    0.0,
+    1.0,
+    1.0
+   ]
+  ],
+  "state": 8616,
+  "voices": 0
+ },
+ "vocoder": {
+  "image": 28872,
+  "ins": 2,
+  "name": "vocoder",
+  "params": [
+   [
+    "alt_f",
+    1.0,
+    3.0,
+    2.0
+   ],
+   [
+    "note1",
+    0.0,
+    12.0,
+    7.0
+   ],
+   [
+    "note2",
+    0.0,
+    12.0,
+    12.0
+   ],
+   [
+    "shape_f",
+    0.99,
+    0.999,
+    0.995
+   ]
+  ],
+  "state": 11064,
+  "voices": 1
+ },
+ "voice": {
+  "image": 4136,
+  "ins": 0,
+  "name": "voice",
+  "params": [
+   [
+    "attack",
+    0.001,
+    2.0,
+    0.005
+   ],
+   [
+    "cutoff",
+    60.0,
+    12000.0,
+    2400.0
+   ],
+   [
+    "detune",
+    0.0,
+    1.0,
+    0.12
+   ],
+   [
+    "envamt",
+    0.0,
+    1.0,
+    0.6
+   ],
+   [
+    "release",
+    0.01,
+    4.0,
+    0.35
+   ],
+   [
+    "res",
+    0.5,
+    8.0,
+    1.5
+   ]
+  ],
+  "state": 4940,
+  "voices": 6
+ },
+ "wavefolder": {
+  "image": 5528,
+  "ins": 0,
+  "name": "wavefolder",
+  "params": [
+   [
+    "alt_f",
+    -1.0,
+    1.0,
+    0.0
+   ],
+   [
+    "scale_f",
+    1.0,
+    10.0,
+    5.0
+   ],
+   [
+    "shape_f",
+    0.0,
+    1.0,
+    0.0
+   ],
+   [
+    "slfo",
+    0.0,
+    1.0,
+    0.5
+   ]
+  ],
+  "state": 8680,
+  "voices": 1
+ }
+}
