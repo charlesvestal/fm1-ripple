@@ -4,9 +4,10 @@
 # Ripple's tests: the simulator (./build.sh --host first) with the shipped disk (tests/scenarios/droplets.txt: the
 # list, each droplet started, played and left, disk mode) and with the self-test disk (tests/disk: Lua on Ripple's
 # port, tests/selftest.sh). Screenshots and audio in app/build/scenarios/. fm1-base's own: base/tests/run_tests.sh.
-#   tests/run_tests.sh
+#   PYTHON=... tests/run_tests.sh      a Python with hvcc and Pillow, as build.sh takes (default python3)
 set -u
 cd "$(dirname "$0")/.."
+PY="${PYTHON:-python3}"
 OUT=app/build/tests
 FAIL=0
 mkdir -p "$OUT" app/build/scenarios/droplets
@@ -21,7 +22,8 @@ run() {
     fi
 }
 run host-build sh build.sh --host
-run pd-currents python3 sdk/tools/currents.py currents/pd --host app/build/currents-host   # (from the kept Heavy C)
+run pd-determinism "$PY" tests/host/determinism.py     # (a patch compiled twice: the same files)
+run pd-currents "$PY" sdk/tools/currents.py currents/pd --host app/build/currents-host
 run droplets env RIPPLE_CURRENTS=app/build/currents-host app/build/host/ripple_host tests/scenarios/droplets.txt \
     app/build/scenarios/droplets
 mkdir -p app/build/scenarios/examples
@@ -31,7 +33,7 @@ run selftest sh tests/selftest.sh
 run pd-examples sh tests/pd_examples.sh
 if command -v emcc >/dev/null 2>&1 && command -v node >/dev/null 2>&1; then
     run emu sh -c "sh build.sh --web && node tests/host/emu_test.mjs app/build/emu/app.wasm"
-    run emu-upload sh -c "python3 sdk/tools/currents.py tests/host/webbeep.c --web-module app/build/tests >/dev/null &&
+    run emu-upload sh -c "$PY sdk/tools/currents.py tests/host/webbeep.c --web-module app/build/tests >/dev/null &&
         node tests/host/emu_upload.mjs app/build/emu/app.wasm app/build/tests/webbeep.wasm"
 else
     echo "  skip emu (no emcc or node)"

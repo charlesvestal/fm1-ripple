@@ -3,7 +3,8 @@
 # provenance, so the FM-1 Firmware Hub shows them as built from source. From fm1-base's template, as LOOM-8's;
 # after X0X's (charlesvestal/fm1-x0x#25, by Kerem Kilic) and Melodee's (keremimo/melodee 4f5fb6d).
 #
-# Ripple's, from fm1-base's template. The currents' Faust is built from the C kept in currents/gen (no Faust here).
+# Ripple's, from fm1-base's template. The currents' Faust is built from the C kept in currents/gen (no Faust here);
+# the Pd currents are compiled by the hvcc sdk/heavy/requirements.txt pins, installed here.
 name: Build and attest firmware
 
 on:
@@ -64,6 +65,8 @@ jobs:
         # the fonts' OpenType features (base/tools/gen_font.py): Pillow's raqm, which loads the system's FriBiDi
         sudo apt-get install -y -qq libfribidi0
         python3 -c "from PIL import features; assert features.check('raqm'), 'Pillow without raqm'"
+        # the Pd currents' compiler (the builder's Python is actions/setup-python's 3.12, with Pillow)
+        python3 -m pip install -q -r sdk/heavy/requirements.txt
         test "$(git -C "$AC79_SDK" rev-parse HEAD)" = d179b4484759423312073f5fbb232501aa491047
         mkdir -p build/release-assets
         if [[ "$GITHUB_REF" == refs/tags/* ]]; then

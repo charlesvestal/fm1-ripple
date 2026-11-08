@@ -2,9 +2,10 @@
 
 Ripple builds hvcc 0.17.3's runtime (its `generators/ir2c/static` files, ISC, Enzien Audio and Wasted Audio) with
 some of its files replaced by the copies in `static/`. A current runs on the FM-1's single-precision FPU, with no C
-library and no allocator, and these are the changes that needs. `sdk/tools/currents.py` writes hvcc's runtime files
-into `sdk/heavy/runtime/` with `static/` laid over them, and Ripple's own files (`HvUtils.h`, `heavy_shim.c`, `new`)
-beside them.
+library and no allocator, and these are the changes that needs. `sdk/tools/currents.py` copies all of hvcc's runtime
+files (but the few it cannot build, `HV_LEAVE_OUT` in `currents.py`) into `sdk/build/heavy/runtime/` with `static/`
+laid over them, and Ripple's own files (`HvUtils.h`, `heavy_shim.c`, `new`) beside them. Nothing there is committed:
+the build makes it again when hvcc's version or a file in `static/` changes. `requirements.txt` pins the hvcc version.
 
 The patch's own files (`Heavy_NAME.*`) are built as hvcc writes them, with two flags (`HV_CFLAGS` in `currents.py`, on the wrapper's `ripple-cflags` line): `-cl-single-precision-constant`, because an `[expr]` puts the patch's numbers into the C as they are (`0.5`, a double), and `-Wno-delete-non-virtual-dtor`, for `hv_NAME_free`, which destroys the patch through the destructor `HeavyContext.hpp` makes non-virtual (a current never calls it).
 

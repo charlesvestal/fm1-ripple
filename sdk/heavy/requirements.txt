@@ -1,0 +1,2 @@
+# hvcc, the Pd compiler: sdk/heavy/static/ is made for this version (sdk/heavy/PATCHES.md)
+hvcc==0.17.3

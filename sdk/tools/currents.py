@@ -15,9 +15,10 @@ A Faust current: its sliders become the current's parameters. With a "freq", a "
 played polyphonically (declare voices "6" in the .dsp; default 6): notes set those three; with inputs, an effect.
 A Pd patch: through Heavy (hvcc's Python library, with Ripple's generator sdk/heavy/c2ripple.py) into C++: its
 [r NAME @hv_param MIN MAX DEFAULT] are the parameters, [notein] gets the notes, [adc~] makes it an effect; its
-abstractions in lib/ beside it. Heavy's C for the patch and the wrapper are kept in gen/NAME_heavy/ and its runtime in
-sdk/heavy/runtime/, like Faust's C (hvcc's files with sdk/heavy/static/ over them: sdk/heavy/PATCHES.md); made again
-when this runs on a Python with hvcc (pip install hvcc==0.17.3).
+abstractions in lib/ beside it. Every build compiles the patch again, with the hvcc sdk/heavy/requirements.txt pins
+(pip install -r sdk/heavy/requirements.txt; Python 3.10 or newer), seeded: the same C every time. Nothing it makes is
+committed: the patch's C and its wrapper go to sdk/build/heavy/NAME/, and Heavy's runtime (hvcc's files with
+sdk/heavy/static/ over them: sdk/heavy/PATCHES.md) to sdk/build/heavy/runtime/.
 A source may be a folder: its .dsp, .pd, .c and .cc files.
 A C current: writes its own rc_desc_t (sdk/include/ripple_current.h) and RC_EXPORT()s it. A C++ current (.cc) the
 same, freestanding: no exceptions, RTTI, thread-safe statics or C++ library, and nothing that needs a constructor
@@ -202,26 +203,63 @@ def faust_to_c(dsp, work):
 
 
 # --------------------------------------------------------------------- Pd ---
-HV_RUNTIME = SDK / "heavy" / "runtime"              # Heavy's own files, shared by every patch
 HV_STATIC = SDK / "heavy" / "static"                # Ripple's runtime files, laid over hvcc's (sdk/heavy/PATCHES.md)
 HV_OWN = ("HvUtils.h", "heavy_shim.c", "new")       # (of them, Ripple's own: not hvcc's files changed)
+HV_BUILD = SDK / "build" / "heavy"                  # what hvcc makes, never committed: each patch's files in
+HV_RUNTIME = HV_BUILD / "runtime"                   # HV_BUILD/NAME/, and Heavy's runtime, shared by every patch
+HV_REQUIREMENTS = SDK / "heavy" / "requirements.txt"
+# hvcc's runtime files left out: they cannot be built for a current, and no patch Ripple builds uses them
+HV_LEAVE_OUT = (
+    "cpuid.c", "cpuid.h",                           # x86's cpuid instruction and stdio (nothing in Heavy calls it)
+    "MicroNAM_C.cpp", "MicroNAM_C.h", "MicroNam",   # [nam~]'s neural amp models: C++ with the C++ library (<cstdint>,
+    "HvSignalNam.c", "HvSignalNam.h",               # <vector>), which a current has not; and [nam~] itself, on them
+)
 # Heavy's C for a patch is built as hvcc writes it, with these flags. An [expr] puts the patch's numbers in the C as
 # they are, 0.5 a double: the compiler takes them as floats (the FM-1 has no double arithmetic). hvcc's hv_NAME_free,
 # which a current never calls, destroys the patch through its non-virtual destructor (PATCHES.md): no warning.
 HV_CFLAGS = ["-cl-single-precision-constant", "-Wno-delete-non-virtual-dtor"]
 
 
+def hvcc_pinned():
+    """the hvcc version Ripple's runtime files are made for: sdk/heavy/requirements.txt's hvcc==X.Y.Z"""
+    m = re.search(r"^\s*hvcc\s*==\s*([\w.]+)", HV_REQUIREMENTS.read_text(), re.M)
+    if not m:
+        raise SystemExit(f"currents: no hvcc==VERSION in {HV_REQUIREMENTS}")
+    return m.group(1)
+
+
 def hvcc_lib():
-    """hvcc's compile_dataflow, if this Python has hvcc (3.10 or newer, pip install hvcc), with Ripple's generator
-    (sdk/heavy/c2ripple.py) importable; else None: the kept files are used"""
+    """hvcc's compile_dataflow, from this Python's hvcc, the version sdk/heavy/requirements.txt pins, with Ripple's
+    generator (sdk/heavy/c2ripple.py) importable"""
+    fix = ("pip install -r sdk/heavy/requirements.txt (hvcc needs Python 3.10 or newer; this is "
+           f"{platform.python_version()}, {sys.executable})")
     try:
         import hvcc
     except ImportError:
-        return None
+        raise SystemExit(f"currents: Pd currents need hvcc in this Python: {fix}")
+    want, have = hvcc_pinned(), importlib.metadata.version("hvcc")
+    if have != want:
+        raise SystemExit(f"currents: Pd currents need hvcc {want} (sdk/heavy/static/ is made for it), and this "
+                         f"Python has hvcc {have}: {fix}")
     sys.dont_write_bytecode = True                  # (no __pycache__ beside the generator)
     if str(SDK / "heavy") not in sys.path:
         sys.path.insert(0, str(SDK / "heavy"))
     return hvcc.compile_dataflow
+
+
+def hvcc_seed():
+    """hvcc's random object names and [random] seeds, the same every run (hvcc 0.17.3's three generators: the
+    random module's and two classes' own; Python mangles their private names). The order hvcc writes things in also
+    follows Python's hashes: of strings, which main() makes the same every run (PYTHONHASHSEED=0), and of hvcc's
+    objects in sets (and of Connection, from its objects'), which are their addresses: here, their seeded names'."""
+    import random
+    from hvcc.interpreters.pd2hv.PdObject import PdObject
+    from hvcc.core.hv2ir.HeavyLangObject import HeavyLangObject
+    random.seed(0)
+    PdObject._PdObject__RANDOM.seed(0)
+    HeavyLangObject._HeavyLangObject__RANDOM.seed(0)
+    PdObject.__hash__ = lambda self: hash(self.obj_id)          # (equal only to themselves, as before)
+    HeavyLangObject.__hash__ = lambda self: hash(self.id)
 
 
 def patch_copyright(pd):
@@ -236,23 +274,29 @@ def patch_copyright(pd):
     return f"the author of {pd.name}"
 
 
+def pd_name(pd):
+    return re.sub(r"\W", "_", pd.stem)
+
+
+def pd_dir(pd):
+    """where the patch's generated files go: sdk/build/heavy/NAME/ (a current's name is its file's: unique)"""
+    return HV_BUILD / pd_name(pd)
+
+
 def pd_to_cc(pd, work):
-    """the patch through Heavy (hvcc's library, with Ripple's generator sdk/heavy/c2ripple.py writing the wrapper that
-    makes it a current): its C++ source. hvcc's files for the patch (Heavy_NAME.*, as hvcc writes them), the wrapper
-    and ripple_heavy.h are kept beside the patch (gen/NAME_heavy/): made again where hvcc is installed, used as they
-    are where it is not."""
-    name = re.sub(r"\W", "_", pd.stem)
-    kept = pd.parent / "gen" / f"{pd.stem}_heavy"
-    wrapper = kept / f"{name}_current.cc"
+    """the patch through Heavy (hvcc's library, seeded: the same C every time, with Ripple's generator
+    sdk/heavy/c2ripple.py writing the wrapper that makes it a current): its C++ source. hvcc's files for the patch
+    (Heavy_NAME.*, as hvcc writes them), the wrapper and ripple_heavy.h go to sdk/build/heavy/NAME/, Heavy's runtime
+    to sdk/build/heavy/runtime/."""
+    name = pd_name(pd)
+    out = pd_dir(pd)
+    wrapper = out / f"{name}_current.cc"
     compile_dataflow = hvcc_lib()
-    if compile_dataflow is None:
-        if not wrapper.exists():
-            raise SystemExit(f"currents: {pd.name} needs hvcc (a Python 3.10 or newer with pip install hvcc==0.17.3 "
-                             f"running this), or {wrapper} to use instead")
-        return wrapper
+    heavy_runtime()
     tmp = Path(tempfile.mkdtemp(prefix="hvcc-"))
     said = io.StringIO()                            # (hvcc says what it does: shown only when it fails)
     try:
+        hvcc_seed()
         with contextlib.redirect_stdout(said):
             results = compile_dataflow(pd, tmp, patch_name=name, copyright=patch_copyright(pd),
                                        search_paths=[pd.parent / "lib", SDK / "heavy" / "heavylib"],   # (abstractions:
@@ -269,49 +313,48 @@ def pd_to_cc(pd, work):
             or not (made / "ripple.json").exists():
         sys.stderr.write(said.getvalue())
         raise SystemExit(f"currents: hvcc failed on {pd}" + "".join(f"\n  {m}" for m in errors))
-    info = json.loads((made / "ripple.json").read_text())
-    files = {}
-    for f in sorted((tmp / "c").iterdir()):         # hvcc's C as it is, Ripple's runtime files over it
-        if f.suffix in (".c", ".cpp", ".h", ".hpp"):
-            files[f.name] = f.read_text()
-    for f in sorted(HV_STATIC.iterdir()):           # (sdk/heavy/PATCHES.md)
-        if f.name in files or f.name in HV_OWN:
-            files[f.name] = f.read_text()
-    own = sorted(fn for fn in files if fn.startswith(f"Heavy_{name}."))
-    heavy_runtime({fn: text for fn, text in files.items() if fn not in own})
+    # hvcc's C for the patch as it is (the runtime files it writes beside it are sdk/build/heavy/runtime/'s)
+    files = {f.name: f.read_text() for f in sorted((tmp / "c").iterdir()) if f.name.startswith(f"Heavy_{name}.")}
     heap = heavy_heap(files, name, tmp)
-    rt = os.path.relpath(HV_RUNTIME, kept)          # (globs and -I relative to the wrapper)
+    rt = os.path.relpath(HV_RUNTIME, out)           # (globs and -I relative to the wrapper)
     files[wrapper.name] = (f"// ripple-sources: *.cpp {rt}/*.c {rt}/*.cpp\n"
                            f"// ripple-cflags: -I. -I{rt} {' '.join(HV_CFLAGS)}\n" + (made / wrapper.name).read_text())
     files["ripple_heavy.h"] = (f"/* generated by sdk/tools/currents.py for {pd.name}: its name as a current, and the "
                                "arena Heavy takes (measured on\n * the computer, and a margin) */\n"
                                f'#define RC_NAME "{pd.stem}"\n#define HEAP {heap}\n')
-    if kept.exists():
-        shutil.rmtree(kept)
-    kept.mkdir(parents=True)
-    for fn in [*own, wrapper.name, "ripple_heavy.h"]:
-        (kept / fn).write_text(files[fn])
+    if out.exists():
+        shutil.rmtree(out)
+    out.mkdir(parents=True)
+    for fn, text in files.items():
+        (out / fn).write_text(text)
     shutil.rmtree(tmp, ignore_errors=True)
-    print(f"currents: gen/{kept.name}/ made again (commit it): {len(info['params'])} parameters, heap {heap} B")
     return wrapper
 
 
-def heavy_runtime(files):
-    """Heavy's runtime, hvcc's files with Ripple's (sdk/heavy/static/) over them, shared by every patch:
-    sdk/heavy/runtime/. hvcc writes only the files a patch uses: they are added, and a file changed (sdk/heavy/static/)
-    is written again; another hvcc version's runtime replaces it all."""
-    files = {**files, "VERSION": importlib.metadata.version("hvcc") + "\n"}
-    have = {f.name: f.read_text() for f in HV_RUNTIME.iterdir()} if HV_RUNTIME.exists() else {}
-    if have.get("VERSION", files["VERSION"]) != files["VERSION"]:
-        shutil.rmtree(HV_RUNTIME)
-        have = {}
-    new = [fn for fn, text in files.items() if have.get(fn) != text]
-    if not new:
+def heavy_runtime():
+    """Heavy's runtime, shared by every patch, in sdk/build/heavy/runtime/: all of hvcc's runtime files (its
+    generators/ir2c/static, but HV_LEAVE_OUT) with Ripple's (sdk/heavy/static/) over them. Made again when hvcc's
+    version, sdk/heavy/static/ or HV_LEAVE_OUT changes (its .stamp); else left as it is, so its objects are reused."""
+    import hvcc
+    hv_static = Path(hvcc.__file__).parent / "generators" / "ir2c" / "static"
+    h = hashlib.sha256(f"hvcc {importlib.metadata.version('hvcc')}\nleave out {' '.join(HV_LEAVE_OUT)}\n".encode())
+    for f in sorted(HV_STATIC.iterdir()):
+        h.update(f.name.encode() + b"\0" + f.read_bytes() + b"\0")
+    stamp = h.hexdigest() + "\n"
+    if (HV_RUNTIME / ".stamp").exists() and (HV_RUNTIME / ".stamp").read_text() == stamp:
         return
-    HV_RUNTIME.mkdir(parents=True, exist_ok=True)
-    for fn in new:
-        (HV_RUNTIME / fn).write_text(files[fn])
-    print(f"currents: sdk/heavy/runtime/: {len(new)} files from hvcc {files['VERSION'].strip()} (commit them)")
+    new = HV_BUILD / "runtime.new"
+    if new.exists():
+        shutil.rmtree(new)
+    shutil.copytree(hv_static, new, ignore=lambda d, names: [n for n in names if n in HV_LEAVE_OUT or n == "__pycache__"])
+    for f in sorted(HV_STATIC.iterdir()):           # (sdk/heavy/PATCHES.md)
+        if not (new / f.name).exists() and f.name not in HV_OWN:
+            raise SystemExit(f"currents: sdk/heavy/static/{f.name} is not one of hvcc's runtime files (sdk/heavy/PATCHES.md)")
+        shutil.copyfile(f, new / f.name)
+    (new / ".stamp").write_text(stamp)
+    if HV_RUNTIME.exists():
+        shutil.rmtree(HV_RUNTIME)
+    new.rename(HV_RUNTIME)
 
 
 def heavy_heap(files, name, tmp):
@@ -349,20 +392,22 @@ int main() {{
 """)
     cxx = os.environ.get("CXX", "c++")
     cc = os.environ.get("CC", "cc")
-    inc = ["-I", str(d), "-I", str(SDK / "faust"), "-I", str(BASE_INC)]
-    objs = []
-    for f in sorted(d.iterdir()):
+    inc = ["-I", str(d), "-I", str(HV_RUNTIME), "-I", str(SDK / "faust"), "-I", str(BASE_INC)]
+    objs, rt = [], []
+    for f in [*sorted(d.iterdir()), *sorted(HV_RUNTIME.iterdir())]:
         if f.suffix not in (".c", ".cpp"):
             continue
-        o = f.with_suffix(".o")
+        o = d / f"{f.parent.name}_{f.stem}.o"
         args = [cxx, "-std=c++11", "-nostdinc++", "-fno-exceptions", "-fno-rtti"] if f.suffix == ".cpp" else [cc, "-std=c99"]
         r = subprocess.run([*args, "-O1", "-w", *HV_CFLAGS, *inc, "-c", str(f), "-o", str(o)], capture_output=True, text=True)
         if r.returncode:
             sys.stderr.write(r.stderr)
             raise SystemExit(f"currents: {f.name} (Heavy) did not compile on this computer")
-        objs.append(str(o))
+        (rt if f.parent == HV_RUNTIME else objs).append(str(o))
+    lib = d / "runtime.a"                           # (the runtime as a library: only what the patch uses is linked)
+    subprocess.run(["ar", "rcs", str(lib), *rt], check=True)
     exe = d / "measure"
-    r = subprocess.run([cxx, *objs, "-o", str(exe)], capture_output=True, text=True)
+    r = subprocess.run([cxx, *objs, str(lib), "-o", str(exe)], capture_output=True, text=True)
     if r.returncode:
         sys.stderr.write(r.stderr)
         raise SystemExit("currents: Heavy's measure did not link")
@@ -705,6 +750,17 @@ def main():
     for s in a.srcs:
         s = s.resolve()
         srcs += sorted([*s.glob("*.dsp"), *s.glob("*.pd"), *s.glob("*.c"), *s.glob("*.cc")]) if s.is_dir() else [s] if s.exists() else []
+    # hvcc goes through sets of strings, whose order follows Python's string hashes, which differ in every process
+    # unless PYTHONHASHSEED is set: with Pd patches to build, this runs again with it set (hvcc_seed does the rest)
+    if any(s.suffix == ".pd" for s in srcs) and os.environ.get("PYTHONHASHSEED") != "0":
+        sys.stdout.flush()
+        os.execve(sys.executable, [sys.executable, *sys.argv], {**os.environ, "PYTHONHASHSEED": "0"})
+    pds = {}                                        # (a Pd patch's files go to sdk/build/heavy/NAME/: one patch a name)
+    for s in srcs:
+        if s.suffix == ".pd":
+            if pd_name(s) == "runtime" or pd_name(s) in pds:
+                raise SystemExit(f"currents: {s} and {pds.get(pd_name(s), 'Heavy runtime')} have the same name: rename one")
+            pds[pd_name(s)] = s
     if a.host:
         build_host(srcs, a.host)
     if a.web:

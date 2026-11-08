@@ -57,8 +57,9 @@ Faust code is compiled to C, then built like a C current. A few things are diffe
 ## In Pd
 
 A Pd patch becomes a current through [Heavy (hvcc)](https://github.com/Wasted-Audio/hvcc), Wasted Audio's
-Pd compiler, which compiles it to C. Install hvcc with
-`pip install hvcc` (or point `HVCC` at it), then build the patch like any other current:
+Pd compiler, which compiles it to C. Install the hvcc version Ripple is made for with
+`pip install -r sdk/heavy/requirements.txt` (hvcc 0.17.3, which needs Python 3.10 or newer), then build the patch like
+any other current:
 
 ```sh
 sdk/tools/currents.py mysound.pd --out build/      # build/mysound.cur, for the FM-1
@@ -99,10 +100,12 @@ A few things are different from Pd on a computer:
 - Delay lines are the usual problem, as in Faust: `[delwrite~ d 1000]` is a second, 176 KB. The build says when a
   current is too big to load, and a droplet that loads it gets "no room". Shorten the delay to fit.
 
-The build keeps Heavy's C for each patch in `gen/NAME_heavy/` beside it, and Heavy's runtime, shared by every patch,
-in `sdk/heavy/runtime/`. Commit both: a computer without hvcc builds the patch from them. The runtime is Enzien
-Audio's and Wasted Audio's, under the ISC licence; the C made from your patch is yours. Put a `LICENSE` beside the
-patch and the build writes its copyright lines into that C.
+The build compiles each patch with hvcc every time, so the Python that runs it needs hvcc
+(`pip install -r sdk/heavy/requirements.txt`: hvcc 0.17.3, Python 3.10 or newer). The output is the same on every
+run, and nothing the build generates is committed: it goes to `sdk/build/heavy/`. Ripple's changes to Heavy's
+runtime are the files in `sdk/heavy/static/`, which `sdk/heavy/PATCHES.md` lists. The runtime is Enzien Audio's and
+Wasted Audio's, under the ISC licence; the C made from your patch is yours. Put a `LICENSE` beside the patch and the
+build writes its copyright lines into that C.
 
 ## In C
 
