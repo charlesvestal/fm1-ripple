@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: MPL-2.0
  * Copyright (C) 2026 Charles Vestal */
-/* Ripple: a firmware that runs droplets (Lua, from its disk) playing currents (Faust or C sound, from its disk),
+/* Ripple: a firmware that runs droplets (Lua, from its disk) playing currents (Faust, Pd or C sound, from its disk),
  * with a disk mode that shows the disk to a computer as a USB drive. Built on fm1-base (base/). */
 #pragma once
 #include <stdint.h>

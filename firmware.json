@@ -5,7 +5,7 @@
   "author": "Charles Vestal",
   "license": "MPL-2.0",
   "tagline": "Droplets and currents for the FM-1",
-  "description": "Ripple turns the M-VAVE FM-1 into an instrument you can reprogram without reflashing. Droplets, small programs in Lua, are its instruments: twelve are built in, from a drum machine to generative bells, a looper and the Game of Life. Their sounds are currents, written in Faust or C, and any droplet can load them and chain them. To add your own, put the FM-1 in disk mode: it shows up on your computer as a USB drive, and you copy files onto it.",
+  "description": "Ripple turns the M-VAVE FM-1 into an instrument you can reprogram without reflashing. Droplets, small programs in Lua, are its instruments: twelve are built in, from a drum machine to generative bells, a looper and the Game of Life. Their sounds are currents, written in Faust, Pd or C, and any droplet can load them and chain them. To add your own, put the FM-1 in disk mode: it shows up on your computer as a USB drive, and you copy files onto it.",
   "tags": ["experimental", "synth", "generative"],
   "install": "https://charlesvestal.github.io/fm1-ripple/install/",
   "site": "https://charlesvestal.github.io/fm1-ripple/",
@@ -16,5 +16,5 @@
     "flash": ["856014", "B36014"],
     "features": ["usb-audio-in", "usb-disk", "second-core", "velocity", "pressure", "screen-reader"]
   },
-  "credits": "Built on fm1-base and felucca-bsp, from Felucca by Leo Kuroshita (Hügelton Instruments). Lua 5.4 (MIT, Lua.org, PUC-Rio). Currents in Faust (GRAME)."
+  "credits": "Built on fm1-base and felucca-bsp, from Felucca by Leo Kuroshita (Hügelton Instruments). Lua 5.4 (MIT, Lua.org, PUC-Rio). Currents in Faust (GRAME) and in Pd through Heavy (hvcc: Wasted Audio, Enzien Audio)."
 }

@@ -56,7 +56,8 @@ Faust code is compiled to C, then built like a C current. A few things are diffe
 
 ## In Pd
 
-A Pd patch becomes a current through Heavy (hvcc), which compiles it to C. Install hvcc with
+A Pd patch becomes a current through [Heavy (hvcc)](https://github.com/Wasted-Audio/hvcc), Wasted Audio's
+Pd compiler, which compiles it to C. Install hvcc with
 `pip install hvcc` (or point `HVCC` at it), then build the patch like any other current:
 
 ```sh
@@ -64,7 +65,8 @@ sdk/tools/currents.py mysound.pd --out build/      # build/mysound.cur, for the 
 ```
 
 Heavy takes Pd vanilla's objects, but not all of them: no externals, no GUI objects, and some table and message
-objects are limited. Heavy's documentation lists them, and hvcc names any object it doesn't know.
+objects are limited. [Heavy's documentation](https://github.com/Wasted-Audio/hvcc/blob/develop/docs/reference/objects/supported.md)
+lists them, and hvcc names any object it doesn't know.
 
 The patch talks to Ripple through a few objects:
 
@@ -75,7 +77,8 @@ The patch talks to Ripple through a few objects:
 - `[dac~]` is the sound out, one or two channels. With `[adc~]` the patch is an effect and works on the sound before
   it in the flow; without it, it adds its sound.
 
-Patches written for Korg's logue SDK with boochow's hvcc_loguesdk work as they are. The note goes to
+Patches written for Korg's logue SDK with boochow's [hvcc_loguesdk](https://github.com/boochow/hvcc_loguesdk_v1)
+work as they are. The note goes to
 `[r pitch @hv_param]` (in Hz) or `[r pitch_note @hv_param]`, with a bang on `[r noteon_trig @hv_param]` and
 `[r noteoff_trig @hv_param]`, and a `[table NAME_r @hv_table]` is filled with white noise before each block. A
 logue oscillator has no envelope of its own, so it sounds as long as the current runs.
