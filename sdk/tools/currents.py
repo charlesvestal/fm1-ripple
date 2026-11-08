@@ -484,7 +484,23 @@ def builder():
     return name
 
 
+# The open pi32v2 LLVM (github.com/jvitkauskas/pi32v2-llvm): with PI32V2_LLVM set to its folder, currents build with
+# it, natively on any machine, in place of JieLi's toolchain (an experiment: SPIKE)
+OPEN_LLVM = Path(os.environ["PI32V2_LLVM"]).resolve() if os.environ.get("PI32V2_LLVM") else None
+OPEN_TOOL = {"pi32v2/bin/clang": "bin/clang", "pi32v2/bin/ld": "bin/ld.lld", "common/bin/objdump": "bin/llvm-objdump"}
+
+
 def tc(tool, *args):
+    if OPEN_LLVM:
+        args = [a for a in args if a != "-mfprev1"]       # (JieLi's flag: -mcpu=r3 has the FPU here)
+        if tool == "pi32v2/bin/ld":                         # its compiler-rt for JieLi's
+            args = [str(next(OPEN_LLVM.glob("lib/clang/*/lib/pi32v2/libclang_rt.builtins.a"))) if
+                    str(a).endswith("libcompiler_rt.a") else a for a in args]
+        r = subprocess.run([str(OPEN_LLVM / OPEN_TOOL[tool]), *map(str, args)], cwd=ROOT, capture_output=True, text=True)
+        if r.returncode:
+            sys.stderr.write(r.stdout + r.stderr)
+            raise SystemExit(f"currents: {tool} (open LLVM) failed")
+        return r.stdout
     rel = [str(Path(a).resolve().relative_to(ROOT)) if isinstance(a, Path) else a for a in args]
     if use_docker():
         cmd = ["docker", "exec", "-w", "/work", builder(), f"/opt/jieli/{tool}", *rel]
