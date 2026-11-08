@@ -75,15 +75,25 @@ The patch talks to Ripple through a few objects:
 - `[dac~]` is the sound out, one or two channels. With `[adc~]` the patch is an effect and works on the sound before
   it in the flow; without it, it adds its sound.
 
+Patches written for Korg's logue SDK with boochow's hvcc_loguesdk work as they are. The note goes to
+`[r pitch @hv_param]` (in Hz) or `[r pitch_note @hv_param]`, with a bang on `[r noteon_trig @hv_param]` and
+`[r noteoff_trig @hv_param]`, and a `[table NAME_r @hv_table]` is filled with white noise before each block. A
+logue oscillator has no envelope of its own, so it sounds as long as the current runs.
+
 Put the patch's abstractions in a `lib` folder beside it, so that the build doesn't take them for currents.
+Wasted Audio's heavylib (`hv.reverb~`, `hv.compressor~`, `hv.lfo` and the rest) is in the SDK, and patches can use
+it without copying it.
 `currents/pd/pdpoly.pd` is an example: four voices from `[poly 4 1]`, each one `lib/pdvoice.pd`.
 
 A few things are different from Pd on a computer:
 
 - There is no `double`, and the maths functions are the fast approximations Faust currents use.
 - `[print]` prints nothing.
-- Heavy keeps its messages and tables in memory of its own. The build measures how much a patch takes by running it
-  on the computer and gives it that much and a quarter more. A table that grows while the patch runs can run out.
+- Heavy keeps its messages, delay lines and tables in memory of its own. The build measures how much a patch takes
+  by running it on the computer and gives it that much and a quarter more. A table that grows while the patch runs
+  can run out.
+- Delay lines are the usual problem, as in Faust: `[delwrite~ d 1000]` is a second, 176 KB. The build says when a
+  current is too big to load, and a droplet that loads it gets "no room". Shorten the delay to fit.
 
 The build keeps Heavy's C for each patch in `gen/NAME_heavy/` beside it, and Heavy's runtime, shared by every patch,
 in `sdk/heavy/runtime/`. Commit both: a computer without hvcc builds the patch from them. The runtime is Enzien

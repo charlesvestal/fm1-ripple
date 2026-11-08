@@ -14,6 +14,8 @@ typedef struct {
     rc_hv_arena_t arena;
     alignas(8) char heap[HEAP];
     float in[2][256], out[2][256];
+    int held;                               /* the logue way's note playing, -1 none */
+    uint32_t rnd;                           /* the noise tables' generator */
 } st_t;
 
 static const rc_param_t P[] = {
@@ -37,6 +39,8 @@ static void init(void *p, float sr)
 {
     st_t *s = (st_t *)p;
     s->arena.base = s->heap;
+    s->held = -1;
+    s->rnd = 22222u;
     s->arena.size = HEAP;
     rc_hv_arena = &s->arena;
     new (s->obj) Heavy_pdsaw(sr, 2, 1, 0);

@@ -197,6 +197,7 @@ def faust_to_c(dsp, work):
 
 # --------------------------------------------------------------------- Pd ---
 HV_NOTEIN = 0x67E37CA3                              # Heavy's hash of "__hv_notein": where [notein] listens
+LOGUE_NOTE = ("pitch", "pitch_note", "noteon_trig", "noteoff_trig")
 HV_POOL_KB, HV_INQ_KB = 2, 1                        # Heavy's message pool and input queue
 HV_RUNTIME = SDK / "heavy" / "runtime"              # Heavy's own files, shared by every patch
 
@@ -234,7 +235,8 @@ def pd_to_cc(pd, work):
         return wrapper
     tmp = Path(tempfile.mkdtemp(prefix="hvcc-"))
     r = subprocess.run([hvcc, str(pd), "-o", str(tmp), "-n", name, "--copyright", f"the author of {pd.name}",
-                        "-p", str(pd.parent / "lib")],     # (abstractions: in lib/ beside the patch, so not currents)
+                        "-p", str(pd.parent / "lib"), str(SDK / "heavy" / "heavylib")],   # (abstractions: lib/ beside
+                       # the patch, so they aren't taken for currents; and Wasted Audio's heavylib)
                        capture_output=True, text=True)
     out = tmp / "c"
     if r.returncode or not (out / f"Heavy_{name}.cpp").exists():
@@ -261,6 +263,14 @@ def pd_to_cc(pd, work):
                          r'info->minVal = ([-\d.e]+)f;\s*info->maxVal = ([-\d.e]+)f;\s*info->defaultVal = ([-\d.e]+)f;', cpp):
         params.append((m.group(1), m.group(2), float(m.group(3)), float(m.group(4)), float(m.group(5))))
     notes = f"0x{HV_NOTEIN:08X}" in cpp
+    # the logue SDK's way (boochow's hvcc_loguesdk and kin): the note as pitch (Hz) or pitch_note, and bangs on
+    # noteon_trig and noteoff_trig; made notes, like Faust's freq / gain / gate, and not parameters
+    logue = {label: h for label, h, *_r in params if label in LOGUE_NOTE}
+    if not notes and logue:
+        params = [q for q in params if q[0] not in LOGUE_NOTE]
+    # the logue way's noise: an [table NAME_r @hv_table] filled with white noise before each block
+    noise = re.findall(r"= (0x[0-9A-F]+), // (\w+_r)\n", re.search(r"enum Table : hv_uint32_t \{(.*?)\};", hpp, re.S).group(1)
+                       if "enum Table" in hpp else "")
     heap = heavy_heap(files, name, tmp)
     sh = os.path.relpath(SDK / "heavy", kept)       # (globs and -I relative to the wrapper)
     rt = os.path.relpath(HV_RUNTIME, kept)
@@ -277,6 +287,8 @@ def pd_to_cc(pd, work):
          "    rc_hv_arena_t arena;",
          "    alignas(8) char heap[HEAP];",
          "    float in[2][256], out[2][256];",
+         "    int held;                               /* the logue way's note playing, -1 none */",
+         "    uint32_t rnd;                           /* the noise tables' generator */",
          "} st_t;", "",
          "static const rc_param_t P[] = {"]
     for label, _h, lo, hi, d in params:
@@ -290,10 +302,26 @@ def pd_to_cc(pd, work):
           "static void set(void *p, int k, float v)", "{",
           "    if (k >= 0 && k < (int)(sizeof(H) / sizeof(H[0])) && H[k]) hv((st_t *)p)->sendFloatToReceiver(H[k], v);", "}", "",
           "static void init(void *p, float sr)", "{", "    st_t *s = (st_t *)p;",
-          "    s->arena.base = s->heap;", "    s->arena.size = HEAP;", "    rc_hv_arena = &s->arena;",
+          "    s->arena.base = s->heap;", "    s->held = -1;", "    s->rnd = 22222u;", "    s->arena.size = HEAP;", "    rc_hv_arena = &s->arena;",
           f"    new (s->obj) Heavy_{name}(sr, {HV_POOL_KB}, {HV_INQ_KB}, 0);",
           f"    for (int k = 0; k < {len(params)}; k++) set(p, k, P[k].def);", "}", ""]
-    if notes:
+    if not notes and logue:
+        w += ["static void note(void *p, int nt, float vel)", "{",
+              "    st_t *s = (st_t *)p;",
+              "    if (vel <= 0.0f) {                       /* the note playing let go: noteoff_trig */",
+              "        if (nt == s->held) {", "            s->held = -1;"]
+        if "noteoff_trig" in logue:
+            w += [f"            hv(s)->sendBangToReceiver({logue['noteoff_trig']});"]
+        w += ["        }", "        return;", "    }", "    s->held = nt;"]
+        if "pitch" in logue:
+            w += [f"    hv(s)->sendFloatToReceiver({logue['pitch']}, 440.0f * fm_exp2f((float)(nt - 69) / 12.0f));"]
+        if "pitch_note" in logue:
+            w += [f"    hv(s)->sendFloatToReceiver({logue['pitch_note']}, (float)nt);"]
+        if "noteon_trig" in logue:
+            w += [f"    hv(s)->sendBangToReceiver({logue['noteon_trig']});"]
+        w += ["}", ""]
+        notes = True
+    elif notes:
         w += ["static void note(void *p, int nt, float vel)", "{",
               "    HvMessage *m = HV_MESSAGE_ON_STACK(3);   /* [notein]: note, velocity 0..127, channel 1 */",
               "    msg_init(m, 3, 0);", "    msg_setFloat(m, 0, (float)nt);", "    msg_setFloat(m, 1, vel * 127.0f);",
@@ -305,6 +333,9 @@ def pd_to_cc(pd, work):
         w += ["    for (int i = 0; i < n; i++) { s->in[0][i] = l[i]; s->in[1][i] = r[i]; }"]
     elif ins == 1:
         w += ["    for (int i = 0; i < n; i++) s->in[0][i] = 0.5f * (l[i] + r[i]);"]
+    for h, tname in noise:
+        w += [f"    {{ float *b = hv(s)->getBufferForTable({h}); int k = hv(s)->getLengthForTable({h});   /* {tname} */",
+              "      while (b && k--) { s->rnd = s->rnd * 1664525u + 1013904223u; *b++ = (float)(int32_t)s->rnd * 4.656613e-10f; } }"]
     w += ["    hv(s)->process(in, out, n);"]
     if ins:
         w += [f"    for (int i = 0; i < n; i++) {{ l[i] = s->out[0][i]; r[i] = {rr}[i]; }}"]
@@ -533,13 +564,14 @@ def pack(elf, out):
             break
     head = struct.pack("<IHHIIIIII", 0x52554352, 1, info, len(img), bss or 0, entry, len(relocs), s, state)
     out.write_bytes(head + img + rel)
-    return len(img), bss or 0, len(relocs)
+    return len(img), bss or 0, len(relocs), state
 
 
 # the toolchain's relocation types (objdump -r): the ones a loaded image must have patched, and the ones it need not
 RELOC_KIND = {8: 1,                                 # R_PI32V2_ABS32: a word holding an address
               5: 2}                                 # R_PI32V2_MOV_ABS32: a 6-byte move, its address at +2
-PC_RELATIVE = {2}                                   # R_PI32V2_LONG_JUMP_23M2: a call
+PC_RELATIVE = {2}
+ARENA, STATES = 84 * 1024, 48 * 1024                # app/flow.c FLOW_ARENA_KB, FLOW_STATE_KB                                   # R_PI32V2_LONG_JUMP_23M2: a call
 
 
 def build_device(srcs, out_dir):
@@ -579,8 +611,15 @@ def build_device(srcs, out_dir):
         undef = re.findall(r"\*UND\*\s+\S+\s+(\S+)$", syms, re.M)
         if bad or cxx or undef:
             raise SystemExit(f"currents: {src.name}: {bad or ''} {cxx[:4] or ''} {('undefined: ' + ' '.join(undef[:6])) if undef else ''}")
-        n_img, n_bss, n_rel = pack(elf, out_dir / f"{name}.cur")
-        print(f"current  {name}.cur  code+data {n_img} B, zeroed {n_bss} B, {n_rel} relocations")
+        n_img, n_bss, n_rel, n_state = pack(elf, out_dir / f"{name}.cur")
+        print(f"current  {name}.cur  code+data {n_img} B, zeroed {n_bss} B, state {n_state} B, {n_rel} relocations")
+        # Ripple's room (app/flow.c): code and data in an 84 KB arena; a state in one piece, in 48 KB of its own or
+        # else in what the 84 has left
+        if n_img + n_bss > ARENA or n_state > max(STATES, ARENA - n_img - n_bss):
+            print(f"currents: {name}: too big to load on the FM-1 ({(n_img + n_bss) // 1024} KB of code and data, "
+                  f"{n_state // 1024} KB of state; a droplet's currents share {ARENA // 1024} KB, and a state is at most "
+                  f"{max(STATES, ARENA - n_img - n_bss) // 1024} KB)",
+                  file=sys.stderr)
 
 
 def build_host(srcs, out_dir):
